@@ -97,7 +97,16 @@ namespace Socket2Process
             {
                 if (ProcessHandleToSidStruct(processHandle, out _SID,errorLog))
                 {
-                    ConvertSidToStringSid(_SID, ref resultSID);
+                    if (!ConvertSidToStringSid(_SID, ref resultSID))
+                    {
+                        errorLog?.Invoke("Can't convert sid to string\n"
+                          + "LastWin32Error: " + Win32ApiUtils.LaseError());
+
+                        // May return code `(1337) The security ID structure is invalid`
+                        //  even tough not documented here:
+                        //  (Maybe because the test try before the process had the chance to fill it with data?? fast at start??)
+                        //      https://docs.microsoft.com/en-gb/windows/win32/api/sddl/nf-sddl-convertstringsidtosida?redirectedfrom=MSDN
+                    }
                 }
             }
             catch (Exception ex) {
