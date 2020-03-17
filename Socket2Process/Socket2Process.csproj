@@ -46,6 +46,7 @@
     <Compile Include="ProcessUserSid.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TcpTable.cs" />
+    <Compile Include="Win32ApiUtils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -51,23 +51,25 @@ namespace SocketInfoConsole
             //        processSid[i] = ProcessUser.sidFromProcess((uint)tcpTable[i].owningPid);
             //    }
             //}
-            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id));
-            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id));
-            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id));
-            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id));
-            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id));
+            Action<string> loggerSample = new Action<string>((text) => Console.WriteLine(text));
+
+            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess((uint)myProcess.Id,loggerSample));
 
             sw.Stop();
             Console.WriteLine("Only fast sid: " + sw.ElapsedMilliseconds + "ms");
 
             sw.Reset(); sw.Start();
-            Console.WriteLine(ProcessUserSid.sidFromProcess(4));
-            Console.WriteLine(ProcessUserSid.sidFromProcess(4));
-            Console.WriteLine(ProcessUserSid.sidFromProcess(4));
-            Console.WriteLine(ProcessUserSid.sidFromProcess(4));
-            Console.WriteLine(ProcessUserSid.sidFromProcess(4));
-            Console.WriteLine(ProcessUserSid.sidFromProcess(4));
-            Console.WriteLine(ProcessUserSid.sidFromProcess(4));
+            Console.WriteLine(ProcessUserSid.sidFromProcess(4,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess(4,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess(4,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess(4,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess(4,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess(4,loggerSample));
+            Console.WriteLine(ProcessUserSid.sidFromProcess(4, loggerSample));
 
             sw.Stop();
             sidTimeTotal = sw.ElapsedMilliseconds;

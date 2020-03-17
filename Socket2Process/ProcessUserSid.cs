@@ -8,9 +8,11 @@ using System.Threading.Tasks;
 
 namespace Socket2Process
 {
+    //https://www.codeproject.com/Articles/14828/How-To-Get-Process-Owner-ID-and-Current-User-SID
+
     public static class ProcessUserSid
     {
-        private static bool ProcessTokenToSidStruct(IntPtr token, out IntPtr SID)
+        private static bool ProcessTokenToSidStruct(IntPtr token, out IntPtr SID, Action<string> errorLog)
         {
             bool result = false;
             const int bufLength = 256; // actuall need 36
@@ -21,7 +23,8 @@ namespace Socket2Process
 
             try
             {
-                int dataLength = bufLength;
+                int dataLength = bufLength; // Usally you call GetTokenInformation() with null,0 to get size
+                                            //          we skip that and give it 256 always (bigger than the actual 36)
                 tokenInformation = Marshal.AllocHGlobal(dataLength);
                 result = GetTokenInformation(token,
                         TOKEN_INFORMATION_CLASS.TokenUser, tokenInformation, dataLength, ref dataLength);
@@ -31,26 +34,31 @@ namespace Socket2Process
                     SID = tokUser.User.Sid;
                     if (SID == IntPtr.Zero)
                     {
-                        Console.WriteLine("Problem Token.SidPtr, " + Marshal.GetLastWin32Error());
+                        errorLog?.Invoke("Sid in sid struct is null\n"
+                        + "LastWin32Error: " + Win32ApiUtils.LaseError() );
                     }
                 }
                 else
                 {
-                    Console.WriteLine("Problem TokenInformaion, " + Marshal.GetLastWin32Error());
+                    errorLog?.Invoke("Can't get sid struct from token\n"
+                       + "LastWin32Error: " + Win32ApiUtils.LaseError() );
                 }
-                return result;
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                return false;
+                errorLog?.Invoke("Can't get sid from process token\n"
+                       + "LastWin32Error: " + Win32ApiUtils.LaseError() + "\n" + ex.ToString());
+                result = false;
             }
             finally
             {
                 Marshal.FreeHGlobal(tokenInformation);
             }
+
+            return result;
         }
 
-        public static bool DumpUserInfo(IntPtr pToken, out IntPtr SID)
+        public static bool ProcessHandleToSidStruct(IntPtr pToken, out IntPtr SID, Action<string> errorLog)
         {
             bool result = false;
             int Access = TOKEN_QUERY;
@@ -62,43 +70,58 @@ namespace Socket2Process
             {
                 if (OpenProcessToken(pToken, Access, ref procToken))
                 {
-                    result = ProcessTokenToSidStruct(procToken, out SID);
+                    result = ProcessTokenToSidStruct(procToken, out SID, errorLog);
                     if (!result)
                     {
-                        Console.WriteLine("Problem Token->Sid 1, " + Marshal.GetLastWin32Error());
+                        errorLog?.Invoke("Can't get sid token of process token\n"
+                            + "LastWin32Error: " + Win32ApiUtils.LaseError() );
                     }
                     
                     CloseHandle(procToken);
                 }
                 return result;
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                Console.WriteLine("Err User 3");
+                errorLog?.Invoke("Can't get sid from process handle\n"
+                       + "LastWin32Error: " + Win32ApiUtils.LaseError() + "\n" + ex.ToString());
                 return false;
             }
         }
 
-        public static string sidFromProcess(IntPtr processHandle)
+        public static string sidFromProcess(IntPtr processHandle, Action<string> errorLog)
         {
             string resultSID = "";
-
             IntPtr _SID = IntPtr.Zero;
             try
             {
-                if (DumpUserInfo(processHandle, out _SID))
+                if (ProcessHandleToSidStruct(processHandle, out _SID,errorLog))
                 {
                     ConvertSidToStringSid(_SID, ref resultSID);
                 }
             }
-            catch (Exception) {
-                Console.WriteLine("Err User 2");
+            catch (Exception ex) {
+                errorLog?.Invoke("Can't get sid from process\n"
+                        + "LastWin32Error: " + Win32ApiUtils.LaseError() + "\n" + ex.ToString());
+            }
+
+            if (resultSID == "")
+            {
+                errorLog?.Invoke("Can't get sid from process\n"
+                          + "LastWin32Error: " + Win32ApiUtils.LaseError() );
             }
 
             return resultSID;
         }
 
-        public static string sidFromProcess(uint PID)
+        /// <summary>
+        /// Get Sid from process
+        /// </summary>
+        /// <param name="PID">process id</param>
+        /// <param name="errorLog">how to handle errors</param>
+        /// <remarks>If you try this too fast, you can get Error codes 0 (ERROR_SUCCESS) or 6 (INVALID_HANDLE)</remarks>
+        /// <returns></returns>
+        public static string sidFromProcess(uint PID, Action<string> errorLog)
         {
             string result = "";
             IntPtr handle = IntPtr.Zero;
@@ -109,21 +132,19 @@ namespace Socket2Process
                 handle = OpenProcess(ProcessAccessFlags.QueryInformation, false, PID);
                 if (!handle.Equals(IntPtr.Zero))
                 {
-                    result = sidFromProcess(handle);
+                    result = sidFromProcess(handle,errorLog);
                 }
 
                 if (handle.Equals(IntPtr.Zero))
                 {
-                    Console.WriteLine("Can't open handle for SID! (Got null) Err:" + Marshal.GetLastWin32Error());
-                }
-                else if (result == "")
-                {
-                    Console.WriteLine("Can't process SID! (Got '') Err:" + Marshal.GetLastWin32Error());
+                    errorLog?.Invoke("Can't open handle for SID! (Got null)\n"
+                        + "LastWin32Error: " + Win32ApiUtils.LaseError() );
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Err User 1 -> " + PID );
+                errorLog?.Invoke("Can't get sid from process\n" 
+                        + "LastWin32Error: " + Win32ApiUtils.LaseError()  + "\n" + ex.ToString());
             }
             finally
             {
