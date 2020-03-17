@@ -10,7 +10,7 @@ namespace SocketInfoConsole
 {
     class Program
     {
-        static void populate()
+        static void TcpIpPerformance()
         {
             long tableTime, processTimeTotal, sidTimeTotal;
             
@@ -77,28 +77,30 @@ namespace SocketInfoConsole
             Console.WriteLine($"Results\n======\nTcpTable: {tableTime}ms\nPaths: {processTimeTotal}ms\nSids: {sidTimeTotal}ms");
         }
 
+        static void UserPerformace()
+        {
+            LocalGroupsAndUsers.PrintInfo(new Action<string>((text) => { Console.WriteLine(text); }));
+            LocalGroupsAndUsers users = new LocalGroupsAndUsers();
+            string[] sids = {"S-1-5-32-5442313" };
+            string[] names = { "Users1" , "Users2" , "Users" };
+
+            var sw = new Stopwatch();
+            sw.Start();
+            if (users.getUserName("S-1-5-21-865263210-2397608334-156313846-1001") == "Yoni" &&
+                    users.isUserInGroups("S-1-5-21-865263210-2397608334-156313846-1002",sids,names ))
+            {
+                Console.WriteLine("Allowed");
+            }
+            sw.Stop();
+            Console.WriteLine($"User check took {sw.ElapsedMilliseconds}ms");
+        }
+
 
         static void Main(string[] args)
         {
-            populate();
-
-            //var sw = new Stopwatch();
-            //sw.Start();
-            //var results = TcpTable.GetAllTcpConnections();
-            //sw.Stop();
-            //Console.WriteLine("Tcp Table took: " + sw.ElapsedMilliseconds + " ms");
-
-            //for (int i = 0; i < results.Length; i++)
-            //{
-            //    var item = results[i];
-            //    Console.WriteLine(
-            //        $"PID\t{item.owningPid}\t" +
-            //        $"\t{IpAddrUtils.UintToIP(item.localAddr,true)}:{item.LocalPort}" +
-            //        $"" +
-            //        $"\t{IpAddrUtils.UintToIP(item.remoteAddr,true)}:{item.RemotePort}"
-            //    );
-            //}
-
+            TcpIpPerformance();
+            UserPerformace();
+           
             Console.ReadLine();
         }
     }
