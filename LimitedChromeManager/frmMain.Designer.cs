@@ -30,7 +30,7 @@
         {
             this.clstProcess = new System.Windows.Forms.CheckedListBox();
             this.rtbLog = new System.Windows.Forms.RichTextBox();
-            this.button1 = new System.Windows.Forms.Button();
+            this.btnClose = new System.Windows.Forms.Button();
             this.pbMain = new System.Windows.Forms.ProgressBar();
             this.bwProcess = new System.ComponentModel.BackgroundWorker();
             this.SuspendLayout();
@@ -54,15 +54,15 @@
             this.rtbLog.Text = "";
             this.rtbLog.WordWrap = false;
             // 
-            // button1
+            // btnClose
             // 
-            this.button1.Location = new System.Drawing.Point(584, 322);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 2;
-            this.button1.Text = "Close all";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.btnClose.Location = new System.Drawing.Point(584, 322);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(75, 23);
+            this.btnClose.TabIndex = 2;
+            this.btnClose.Text = "Close all";
+            this.btnClose.UseVisualStyleBackColor = true;
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
             // pbMain
             // 
@@ -73,10 +73,8 @@
             // 
             // bwProcess
             // 
-            this.bwProcess.WorkerReportsProgress = true;
             this.bwProcess.WorkerSupportsCancellation = true;
             this.bwProcess.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bwProcess_DoWork);
-            this.bwProcess.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.bwProcess_ProgressChanged);
             this.bwProcess.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bwProcess_RunWorkerCompleted);
             // 
             // frmMain
@@ -86,7 +84,7 @@
             this.ClientSize = new System.Drawing.Size(669, 353);
             this.ControlBox = false;
             this.Controls.Add(this.pbMain);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.btnClose);
             this.Controls.Add(this.rtbLog);
             this.Controls.Add(this.clstProcess);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -103,7 +101,7 @@
 
         private System.Windows.Forms.CheckedListBox clstProcess;
         private System.Windows.Forms.RichTextBox rtbLog;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btnClose;
         private System.Windows.Forms.ProgressBar pbMain;
         private System.ComponentModel.BackgroundWorker bwProcess;
     }

@@ -18,7 +18,7 @@ namespace LimitedChromeManager
             "Protect from closing",
             "Monitor processes in limited user", // Long
             "Close all existing process in limited user",
-            "Start HTTP token server", //Long - 1 Request
+            "Start HTTP token server", //Long - 1 Request-
             "Run limited chrome",
             "Wait for chrome to exit", //Long (on exit from monitor- check if processes > 0)
             "Done!",
@@ -46,12 +46,6 @@ namespace LimitedChromeManager
             }
         }
 
-        public void log(object data)
-        {
-            string message = string.Format("[{0}] {1}\n", DateTime.Now.ToLongTimeString(), data?.ToString() ?? "<Empty>");
-            InvokeF(rtbLog, () => { rtbLog.Text = message + rtbLog.Text; });
-        }
-
         public void setProgress(int percentage)
         {
             if (percentage >= 0 && percentage <= 100)
@@ -70,6 +64,12 @@ namespace LimitedChromeManager
                  });
             }
         }
+       
+        public void log(object data)
+        {
+            string message = string.Format("[{0}] {1}\n", DateTime.Now.ToLongTimeString(), data?.ToString() ?? "<Empty>");
+            InvokeF(rtbLog, () => { rtbLog.Text = message + rtbLog.Text; });
+        }
 
         public frmMain()
         {
@@ -83,11 +83,10 @@ namespace LimitedChromeManager
             bwProcess.RunWorkerAsync();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void btnClose_Click(object sender, EventArgs e)
         {
             Application.Exit();
         }
-
         private void bwProcess_DoWork(object sender, DoWorkEventArgs e)
         {
             setProgress(0);
@@ -102,10 +101,6 @@ namespace LimitedChromeManager
             throw new Exception("Example exception");
 
             e.Result = 0;
-        }
-
-        private void bwProcess_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
         }
 
         private void bwProcess_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -125,5 +120,7 @@ namespace LimitedChromeManager
                 log("Process Ended without any Errors");
             }
         }
+
+        
     }
 }
