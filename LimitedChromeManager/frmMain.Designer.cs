@@ -32,6 +32,7 @@
             this.rtbLog = new System.Windows.Forms.RichTextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.pbMain = new System.Windows.Forms.ProgressBar();
+            this.bwProcess = new System.ComponentModel.BackgroundWorker();
             this.SuspendLayout();
             // 
             // clstProcess
@@ -40,21 +41,22 @@
             this.clstProcess.FormattingEnabled = true;
             this.clstProcess.Location = new System.Drawing.Point(12, 12);
             this.clstProcess.Name = "clstProcess";
-            this.clstProcess.Size = new System.Drawing.Size(413, 304);
+            this.clstProcess.Size = new System.Drawing.Size(279, 304);
             this.clstProcess.TabIndex = 0;
             // 
             // rtbLog
             // 
-            this.rtbLog.Location = new System.Drawing.Point(431, 12);
+            this.rtbLog.Location = new System.Drawing.Point(297, 12);
             this.rtbLog.Name = "rtbLog";
             this.rtbLog.ReadOnly = true;
-            this.rtbLog.Size = new System.Drawing.Size(442, 304);
+            this.rtbLog.Size = new System.Drawing.Size(362, 304);
             this.rtbLog.TabIndex = 1;
             this.rtbLog.Text = "";
+            this.rtbLog.WordWrap = false;
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(798, 322);
+            this.button1.Location = new System.Drawing.Point(584, 322);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 2;
@@ -66,14 +68,22 @@
             // 
             this.pbMain.Location = new System.Drawing.Point(12, 322);
             this.pbMain.Name = "pbMain";
-            this.pbMain.Size = new System.Drawing.Size(780, 23);
+            this.pbMain.Size = new System.Drawing.Size(566, 23);
             this.pbMain.TabIndex = 3;
+            // 
+            // bwProcess
+            // 
+            this.bwProcess.WorkerReportsProgress = true;
+            this.bwProcess.WorkerSupportsCancellation = true;
+            this.bwProcess.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bwProcess_DoWork);
+            this.bwProcess.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.bwProcess_ProgressChanged);
+            this.bwProcess.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bwProcess_RunWorkerCompleted);
             // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(885, 353);
+            this.ClientSize = new System.Drawing.Size(669, 353);
             this.ControlBox = false;
             this.Controls.Add(this.pbMain);
             this.Controls.Add(this.button1);
@@ -95,6 +105,7 @@
         private System.Windows.Forms.RichTextBox rtbLog;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.ProgressBar pbMain;
+        private System.ComponentModel.BackgroundWorker bwProcess;
     }
 }
 
