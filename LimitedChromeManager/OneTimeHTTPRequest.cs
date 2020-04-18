@@ -70,6 +70,7 @@ namespace LimitedChromeManager
                 else
                 {
                     string ResponseText = @"HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
 Content-Type: {0}
 Content-Length: {1}
 Connection: Closed";

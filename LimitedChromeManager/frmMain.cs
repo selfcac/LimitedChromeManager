@@ -21,6 +21,7 @@ namespace LimitedChromeManager
             "STEP_CLEAN|Close all existing process in limited user",
             "STEP_HTTP|Start HTTP token server", //Long - 1 Request-
             "STEP_CHROME|Run limited chrome",
+            "STEP_TOKEN|Chrome requested token",
             "STEP_WAIT|Wait for chrome to exit", //Long (on exit from monitor- check if processes > 0)
             "STEP_DONE|Done!",
             "STEP_|",
@@ -140,11 +141,16 @@ namespace LimitedChromeManager
             OneTimeHTTPRequest server = new OneTimeHTTPRequest();
             try
             {
-                server.StartListener(IPAddress.Loopback, 6667);
+                log("Starting HTTP Token server...");
+                checkItem("STEP_HTTP");
+                server.StartListener(IPAddress.Loopback, 80);
+                checkItem("STEP_TOKEN");
+                log("Token sucess!!");
             }
             catch (Exception ex)
             {
                 log("Error serving token\n" + ex.ToString());
+                checkItem("STEP_ERROR");
             }
         }
 
@@ -162,9 +168,10 @@ namespace LimitedChromeManager
 
             Thread http = new Thread(oneTimeTokenHTTPThread);
             http.Start();
+            
+            
             http.Join();
-
-            log("Done threads!");
+            log("All Done threads!");
         }
 
        
