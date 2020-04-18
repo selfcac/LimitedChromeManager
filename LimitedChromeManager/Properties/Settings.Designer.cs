@@ -43,7 +43,7 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;")]
         public string AllowedProcessesPaths {
             get {
                 return ((string)(this["AllowedProcessesPaths"]));
@@ -55,7 +55,7 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Yoni;")]
         public string AllowedUserNames {
             get {
                 return ((string)(this["AllowedUserNames"]));

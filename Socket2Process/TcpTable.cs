@@ -57,6 +57,13 @@ namespace Socket2Process
                         new byte[2] { remotePort2, remotePort1 }, 0);
                 }
             }
+
+            public override string ToString()
+            {
+                string localip = new System.Net.IPAddress(localAddr).ToString();
+                string remoteip = new System.Net.IPAddress(remoteAddr).ToString();
+                return string.Format("{0}:{1}=>{2}:{3}", localip, LocalPort, remoteip, RemotePort);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]

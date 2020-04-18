@@ -81,5 +81,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Socket2Process\Socket2Process.csproj">
+      <Project>{7750948d-6383-4ef3-a503-7f3724d2e2b6}</Project>
+      <Name>Socket2Process</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
