@@ -40,5 +40,41 @@ namespace LimitedChromeManager.Properties {
                 return ((string)(this["token"]));
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string AllowedProcessesPaths {
+            get {
+                return ((string)(this["AllowedProcessesPaths"]));
+            }
+            set {
+                this["AllowedProcessesPaths"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string AllowedUserNames {
+            get {
+                return ((string)(this["AllowedUserNames"]));
+            }
+            set {
+                this["AllowedUserNames"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string AllowedUserSids {
+            get {
+                return ((string)(this["AllowedUserSids"]));
+            }
+            set {
+                this["AllowedUserSids"] = value;
+            }
+        }
     }
 }

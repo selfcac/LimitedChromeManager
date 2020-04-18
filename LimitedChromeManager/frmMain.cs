@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -134,6 +135,18 @@ namespace LimitedChromeManager
             log("cancel thread done.");
         }
 
+        public void oneTimeTokenHTTPThread()
+        {
+            OneTimeHTTPRequest server = new OneTimeHTTPRequest();
+            try
+            {
+                server.StartListener(IPAddress.Loopback, 6667);
+            }
+            catch (Exception ex)
+            {
+                log("Error serving token\n" + ex.ToString());
+            }
+        }
 
         private void bwProcess_DoWork(object sender, DoWorkEventArgs e)
         {
@@ -147,7 +160,9 @@ namespace LimitedChromeManager
             wait5.Join();
             */
 
-
+            Thread http = new Thread(oneTimeTokenHTTPThread);
+            http.Start();
+            http.Join();
 
             log("Done threads!");
         }
