@@ -43,7 +43,7 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl2.exe;")]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;")]
         public string AllowedProcessesPaths {
             get {
                 return ((string)(this["AllowedProcessesPaths"]));
@@ -74,6 +74,18 @@ namespace LimitedChromeManager.Properties {
             }
             set {
                 this["AllowedUserSids"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("/get/token;Agent: selfc-ext")]
+        public string RequestFindings {
+            get {
+                return ((string)(this["RequestFindings"]));
+            }
+            set {
+                this["RequestFindings"] = value;
             }
         }
     }

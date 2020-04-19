@@ -139,12 +139,15 @@ namespace LimitedChromeManager
 
         public void oneTimeTokenHTTPThread()
         {
-            OneTimeHTTPRequest server = new OneTimeHTTPRequest();
+            OneTimeHTTPRequest server = new OneTimeHTTPRequest()
+            {
+                findInRequest = Properties.Settings.Default.RequestFindings.Split(';')
+            };
             try
             {
                 log("Starting HTTP Token server...");
                 checkItem("STEP_HTTP");
-                string error = server.StartListener(IPAddress.Loopback, 80,()=>Flags.USER_CANCEL);
+                string error = server.StartListener(IPAddress.Loopback, 6667,()=>Flags.USER_CANCEL);
                 if (error == "")
                 {
                     checkItem("STEP_TOKEN");

@@ -19,6 +19,7 @@ namespace LimitedChromeManager
         public TimeSpan TotalResponseTimeout = TimeSpan.FromSeconds(5);
         public TimeSpan SleepInterval = TimeSpan.FromMilliseconds(200);
 
+        public string[] findInRequest = { };
         public byte[] DataToServe = Encoding.ASCII.GetBytes("Sample Text");
         public string DataContentType = "text/plain";
 
@@ -69,70 +70,87 @@ namespace LimitedChromeManager
                         }
                         recieveTimer.Stop();
 
-                        string requestData = Encoding.ASCII.GetString(RequestBuffer, 0, bytesRecieved);
+                        string requestData = Encoding.ASCII.GetString(RequestBuffer, 0, bytesRecieved).ToLower();
                         if (!requestData.EndsWith("\r\n\r\n"))
                         {
                             result="Error getting a valid HTTP request";
                         }
                         else
                         {
-                            string ResponseText = @"HTTP/1.1 200 OK
+                            bool validReq = true;
+                            foreach(string item in findInRequest)
+                            {
+                                if (!requestData.Contains(item.ToLower()))
+                                {
+                                    validReq = false;
+                                    break;
+                                }
+                            }
+
+                            if (!validReq)
+                            {
+                                result = "Didn't find all required text in request:\n" + requestData;
+                            }
+                            else
+                            {
+                                string ResponseText = @"HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 Content-Type: {0}
 Content-Length: {1}
 Connection: Closed";
 
-                            int pid = pidFromConnection(client);
-                            if (pid < 0)
-                            {
-                                result = "Can't find token req PID owner";
-                            }
-                            else
-                            {
-
-                                LocalGroupsAndUsers users = new LocalGroupsAndUsers();
-                                string processPath = ProcessPath.GetProcessPath((uint)pid);
-                                string userSid = ProcessUserSid.sidFromProcess((uint)pid, (s) => { });
-                                string userName = users.getUserName(userSid);
-
-                                if (processPath == "" || userName == "" || userSid == "")
+                                int pid = pidFromConnection(client);
+                                if (pid < 0)
                                 {
-                                    result = "Error getting process information";
+                                    result = "Can't find token req PID owner";
                                 }
                                 else
                                 {
 
-                                    if (
-                                        (
-                                            Properties.Settings.Default.AllowedUserSids.ToLower().Contains(userSid.ToLower())
-                                            ||
-                                            Properties.Settings.Default.AllowedUserNames.ToLower().Contains(userName.ToLower())
-                                        )
-                                        &&
-                                            Properties.Settings.Default.AllowedProcessesPaths.ToLower().Contains(processPath.ToLower())
-                                        && !isCancelled()
-                                        )
+                                    LocalGroupsAndUsers users = new LocalGroupsAndUsers();
+                                    string processPath = ProcessPath.GetProcessPath((uint)pid);
+                                    string userSid = ProcessUserSid.sidFromProcess((uint)pid, (s) => { });
+                                    string userName = users.getUserName(userSid);
+
+                                    if (processPath == "" || userName == "" || userSid == "")
                                     {
-                                        ResponseText += "\r\n\r\n" + Encoding.ASCII.GetString(DataToServe);
-                                        ResponseText = ResponseText.Replace("{0}", DataContentType).Replace("{1}", DataToServe.Length.ToString());
-                                        byte[] responseBuffer = Encoding.ASCII.GetBytes(ResponseText);
-
-                                        Stopwatch sendTimer = new Stopwatch();
-                                        sendTimer.Start();
-                                        ns.Write(responseBuffer, 0, responseBuffer.Length);
-                                        sendTimer.Stop();
-
-                                        if (sendTimer.ElapsedMilliseconds >= ns.WriteTimeout)
-                                        {
-                                            throw new Exception("Error sending response, got timeout.");
-                                        }
+                                        result = "Error getting process information";
                                     }
                                     else
                                     {
-                                        result = (string.Format(
-                                            "Token acced denied problem!\nProcess: {0}\nUserSid: {1}\nUserName: {2}",
-                                                processPath, userSid, userName
-                                            ));
+
+                                        if (
+                                            (
+                                                Properties.Settings.Default.AllowedUserSids.ToLower().Contains(userSid.ToLower())
+                                                ||
+                                                Properties.Settings.Default.AllowedUserNames.ToLower().Contains(userName.ToLower())
+                                            )
+                                            &&
+                                                Properties.Settings.Default.AllowedProcessesPaths.ToLower().Contains(processPath.ToLower())
+                                            && !isCancelled()
+                                            )
+                                        {
+                                            ResponseText += "\r\n\r\n" + Encoding.ASCII.GetString(DataToServe);
+                                            ResponseText = ResponseText.Replace("{0}", DataContentType).Replace("{1}", DataToServe.Length.ToString());
+                                            byte[] responseBuffer = Encoding.ASCII.GetBytes(ResponseText);
+
+                                            Stopwatch sendTimer = new Stopwatch();
+                                            sendTimer.Start();
+                                            ns.Write(responseBuffer, 0, responseBuffer.Length);
+                                            sendTimer.Stop();
+
+                                            if (sendTimer.ElapsedMilliseconds >= ns.WriteTimeout)
+                                            {
+                                                throw new Exception("Error sending response, got timeout.");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            result = (string.Format(
+                                                "Token acced denied problem!\nProcess: {0}\nUserSid: {1}\nUserName: {2}",
+                                                    processPath, userSid, userName
+                                                ));
+                                        }
                                     }
                                 }
                             }
