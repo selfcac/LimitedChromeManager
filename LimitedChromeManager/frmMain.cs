@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Linq;
 using System.Net;
@@ -143,9 +144,17 @@ namespace LimitedChromeManager
             {
                 log("Starting HTTP Token server...");
                 checkItem("STEP_HTTP");
-                server.StartListener(IPAddress.Loopback, 80);
-                checkItem("STEP_TOKEN");
-                log("Token sucess!!");
+                string error = server.StartListener(IPAddress.Loopback, 80,()=>Flags.USER_CANCEL);
+                if (error == "")
+                {
+                    checkItem("STEP_TOKEN");
+                    log("Token sucess!!");
+                }
+                else
+                {
+                    log("Error serving token\n" + error);
+                    checkItem("STEP_ERROR");
+                }
             }
             catch (Exception ex)
             {

@@ -24,23 +24,25 @@ namespace LimitedChromeManager
 
         public byte[] RequestBuffer = new byte[1024 * 500]; // 500KB default
 
-        public void StartListener(IPAddress ip, int port)
+        public string StartListener(IPAddress ip, int port, Func<bool> isCancelled)
         {
+            string result = ""; // empty is non error
+
             TcpListener server = new TcpListener(ip,port);
             server.Start();
 
             // Timeout for accepting client -> Just check if pending (https://stackoverflow.com/a/3315200)
             int acceptTimePassedMS = 0;
-            while (!server.Pending() && acceptTimePassedMS < AcceptTimeout.TotalMilliseconds)
+            while (!server.Pending() && acceptTimePassedMS < AcceptTimeout.TotalMilliseconds && !isCancelled())
             {
                 int timeToSleepMS = (int)SleepInterval.TotalMilliseconds;
                 Thread.Sleep(timeToSleepMS);
                 acceptTimePassedMS += timeToSleepMS;
             }
 
-            if (acceptTimePassedMS >= AcceptTimeout.TotalMilliseconds)
+            if (acceptTimePassedMS >= AcceptTimeout.TotalMilliseconds || isCancelled())
             {
-                throw new Exception("Accept socket timeout");
+                result = "Accept socket timeout";
             }
             else
             {
@@ -49,88 +51,106 @@ namespace LimitedChromeManager
                 client.SendTimeout = (int)TotalResponseTimeout.TotalMilliseconds;
 
                 NetworkStream ns = client.GetStream();
-                if (!ns.CanTimeout)
-                    throw new Exception("Networkstream can't timeout!");
-                ns.ReadTimeout = client.ReceiveTimeout;
-                ns.WriteTimeout = client.SendTimeout;
+                try
+                {
+                    if (!ns.CanTimeout)
+                        result = "Networkstream can't timeout!";
+                    else
+                    {
+                        ns.ReadTimeout = client.ReceiveTimeout;
+                        ns.WriteTimeout = client.SendTimeout;
 
-                int bytesRecieved = 0;
-                Stopwatch recieveTimer = new Stopwatch();
-                recieveTimer.Start();
-                while (recieveTimer.ElapsedMilliseconds < ns.ReadTimeout && ns.DataAvailable)
-                {
-                    bytesRecieved += ns.Read(RequestBuffer, bytesRecieved, 1024);
-                }
-                recieveTimer.Stop();
+                        int bytesRecieved = 0;
+                        Stopwatch recieveTimer = new Stopwatch();
+                        recieveTimer.Start();
+                        while (recieveTimer.ElapsedMilliseconds < ns.ReadTimeout && ns.DataAvailable && !isCancelled())
+                        {
+                            bytesRecieved += ns.Read(RequestBuffer, bytesRecieved, 1024);
+                        }
+                        recieveTimer.Stop();
 
-                string requestData = Encoding.ASCII.GetString(RequestBuffer,0, bytesRecieved);
-                if (!requestData.EndsWith("\r\n\r\n"))
-                {
-                    throw new Exception("Error getting a valid HTTP request");
-                }
-                else
-                {
-                    string ResponseText = @"HTTP/1.1 200 OK
+                        string requestData = Encoding.ASCII.GetString(RequestBuffer, 0, bytesRecieved);
+                        if (!requestData.EndsWith("\r\n\r\n"))
+                        {
+                            result="Error getting a valid HTTP request";
+                        }
+                        else
+                        {
+                            string ResponseText = @"HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 Content-Type: {0}
 Content-Length: {1}
 Connection: Closed";
 
-                    int pid = pidFromConnection(client);
-                    if (pid < 0)
-                    {
-                        throw new Exception("Can't find token req PID owner");
-                    }
+                            int pid = pidFromConnection(client);
+                            if (pid < 0)
+                            {
+                                result = "Can't find token req PID owner";
+                            }
+                            else
+                            {
 
-                    LocalGroupsAndUsers users = new LocalGroupsAndUsers();
-                    string processPath = ProcessPath.GetProcessPath((uint)pid);
-                    string userSid = ProcessUserSid.sidFromProcess((uint)pid, (s) => { });
-                    string userName = users.getUserName(userSid);
-                    if (processPath == "" || userName == "" || userSid == "")
-                    {
-                        throw new Exception("Error getting process information");
-                    }
+                                LocalGroupsAndUsers users = new LocalGroupsAndUsers();
+                                string processPath = ProcessPath.GetProcessPath((uint)pid);
+                                string userSid = ProcessUserSid.sidFromProcess((uint)pid, (s) => { });
+                                string userName = users.getUserName(userSid);
 
-                    if (
-                        (
-                            Properties.Settings.Default.AllowedUserSids.ToLower().Contains(userSid.ToLower()) 
-                            || 
-                            Properties.Settings.Default.AllowedUserNames.ToLower().Contains(userName.ToLower())
-                        )
-                        &&
-                            Properties.Settings.Default.AllowedProcessesPaths.ToLower().Contains(processPath.ToLower())
-                        )
-                    {
-                        ResponseText += "\r\n\r\n" + Encoding.ASCII.GetString(DataToServe);
-                        ResponseText = ResponseText.Replace("{0}", DataContentType).Replace("{1}", DataToServe.Length.ToString());
-                        byte[] responseBuffer = Encoding.ASCII.GetBytes(ResponseText);
+                                if (processPath == "" || userName == "" || userSid == "")
+                                {
+                                    result = "Error getting process information";
+                                }
+                                else
+                                {
 
-                        Stopwatch sendTimer = new Stopwatch();
-                        sendTimer.Start();
-                        ns.Write(responseBuffer, 0, responseBuffer.Length);
-                        sendTimer.Stop();
+                                    if (
+                                        (
+                                            Properties.Settings.Default.AllowedUserSids.ToLower().Contains(userSid.ToLower())
+                                            ||
+                                            Properties.Settings.Default.AllowedUserNames.ToLower().Contains(userName.ToLower())
+                                        )
+                                        &&
+                                            Properties.Settings.Default.AllowedProcessesPaths.ToLower().Contains(processPath.ToLower())
+                                        && !isCancelled()
+                                        )
+                                    {
+                                        ResponseText += "\r\n\r\n" + Encoding.ASCII.GetString(DataToServe);
+                                        ResponseText = ResponseText.Replace("{0}", DataContentType).Replace("{1}", DataToServe.Length.ToString());
+                                        byte[] responseBuffer = Encoding.ASCII.GetBytes(ResponseText);
 
-                        if (sendTimer.ElapsedMilliseconds >= ns.WriteTimeout)
-                        {
-                            throw new Exception("Error sending response, got timeout.");
+                                        Stopwatch sendTimer = new Stopwatch();
+                                        sendTimer.Start();
+                                        ns.Write(responseBuffer, 0, responseBuffer.Length);
+                                        sendTimer.Stop();
+
+                                        if (sendTimer.ElapsedMilliseconds >= ns.WriteTimeout)
+                                        {
+                                            throw new Exception("Error sending response, got timeout.");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        result = (string.Format(
+                                            "Token acced denied problem!\nProcess: {0}\nUserSid: {1}\nUserName: {2}",
+                                                processPath, userSid, userName
+                                            ));
+                                    }
+                                }
+                            }
                         }
                     }
-                    else
-                    {
-                        throw new Exception(string.Format(
-                            "Token acced denied problem!\nProcess: {0}\nUserSid: {1}\nUserName: {2}",
-                                processPath, userSid, userName
-                            ));
-                    }
-
-                    
                 }
-
-                ns.Close();
-                client.Close();
-                server.Stop();
+                catch (Exception ex)
+                {
+                    result = ex.ToString();
+                }
+                finally
+                {
+                    ns.Close();
+                    client.Close();
+                    server.Stop();
+                }
             }
-            
+            return "(Cancelled? " + isCancelled() + ") "+result;
         }
 
 

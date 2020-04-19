@@ -43,7 +43,7 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;")]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl2.exe;")]
         public string AllowedProcessesPaths {
             get {
                 return ((string)(this["AllowedProcessesPaths"]));

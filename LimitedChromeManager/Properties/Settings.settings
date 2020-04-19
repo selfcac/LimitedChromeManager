@@ -9,7 +9,7 @@
       <Value Profile="(Default)">123123</Value>
     </Setting>
     <Setting Name="AllowedProcessesPaths" Type="System.String" Scope="User">
-      <Value Profile="(Default)">C:\Windows\System32\curl.exe;</Value>
+      <Value Profile="(Default)">C:\Windows\System32\curl2.exe;</Value>
     </Setting>
     <Setting Name="AllowedUserNames" Type="System.String" Scope="User">
       <Value Profile="(Default)">Yoni;</Value>
