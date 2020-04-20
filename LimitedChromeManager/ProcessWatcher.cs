@@ -94,6 +94,7 @@ namespace LimitedChromeManager
             openProcessWatch.Start();
             closeProcessWatch.Start();
 
+
             try
             {
                 // Kill all
