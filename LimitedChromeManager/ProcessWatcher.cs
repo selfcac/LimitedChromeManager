@@ -119,7 +119,7 @@ namespace LimitedChromeManager
                         Thread.Sleep((int)sleepInterval.TotalMilliseconds);
                     }
 
-                    // TODO: Cancel if unkown process
+                    // TODO: Cancel + Close all if unkown process
 
                     if ((isCancelled?.Invoke() ?? false))
                     {
