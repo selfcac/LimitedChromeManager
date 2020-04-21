@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,36 @@ namespace LimitedChromeManager
 {
     public class OneTimeHTTPRequest
     {
+        //  Class types:
+        // =================================================
+
+        public enum HTTPResultEnum
+        {
+            NOTOKEN_ERROR, // Error in protocols, networks etc
+            TOKEN_AUTH_ERROR, // Token requirement not met
+            SUCCESS
+        }
+
+        public class HTTPTaskResult : ResultObject<SimpleWrapper<bool>, HTTPResultEnum> // Only for short lines
+        {
+            public static new HTTPTaskResult 
+                Fail(HTTPResultEnum statusCode, string desc, SimpleWrapper<bool> resultObj = default, Exception error = null)
+            {
+                return (HTTPTaskResult)ResultObject<SimpleWrapper<bool>, HTTPResultEnum>.Fail(statusCode, desc, resultObj, error);
+            }
+
+            public static new HTTPTaskResult
+                Success(HTTPResultEnum statusCode, string desc, SimpleWrapper<bool> resultObj = default, Exception error = null)
+            {
+                return (HTTPTaskResult)ResultObject<SimpleWrapper<bool>, HTTPResultEnum>.Success(statusCode, desc, resultObj, error);
+            }
+        }
+
+        private const string HTTPHeadersEnd = "\r\n\r\n";
+
+        //  Class config:
+        // =================================================
+
         public TimeSpan AcceptTimeout = TimeSpan.FromMinutes(2);
         // Including read write times:
         public TimeSpan TotalRequestTimeout = TimeSpan.FromSeconds(5);
@@ -23,31 +54,34 @@ namespace LimitedChromeManager
         public byte[] DataToServe = Encoding.ASCII.GetBytes("Sample Text");
         public string DataContentType = "text/plain";
 
-        public byte[] RequestBuffer = new byte[1024 * 500]; // 500KB default
+        public int BufferSize = 1024 * 500; // 500KB default
+        
 
-        public string StartListener(IPAddress ip, int port, Func<bool> isCancelled)
+        //  Class Functions:
+        // =================================================
+
+
+        public HTTPTaskResult StartListener(IPAddress ip, int port, Func<bool> isCancelled)
         {
-            string result = ""; // empty is non error
+            HTTPTaskResult result
+                = HTTPTaskResult.Fail(HTTPResultEnum.NOTOKEN_ERROR, "init");
 
-            TcpListener server = new TcpListener(ip,port);
-            server.Start();
+            TcpListener tcpServer = new TcpListener(ip, port);
+            tcpServer.Start();
 
             // Timeout for accepting client -> Just check if pending (https://stackoverflow.com/a/3315200)
             int acceptTimePassedMS = 0;
-            while (!server.Pending() && acceptTimePassedMS < AcceptTimeout.TotalMilliseconds && !isCancelled())
-            {
-                int timeToSleepMS = (int)SleepInterval.TotalMilliseconds;
-                Thread.Sleep(timeToSleepMS);
-                acceptTimePassedMS += timeToSleepMS;
-            }
+            acceptTimePassedMS = WaitForTcpClient(isCancelled, tcpServer, acceptTimePassedMS);
 
             if (acceptTimePassedMS >= AcceptTimeout.TotalMilliseconds || isCancelled())
             {
-                result = "Accept socket timeout";
+                result = HTTPTaskResult
+                    .Fail(HTTPResultEnum.NOTOKEN_ERROR, 
+                        "Accept socket timeout", resultObj: isCancelled());
             }
             else
             {
-                TcpClient client = server.AcceptTcpClient();
+                TcpClient client = tcpServer.AcceptTcpClient();
                 client.ReceiveTimeout = (int)TotalRequestTimeout.TotalMilliseconds;
                 client.SendTimeout = (int)TotalResponseTimeout.TotalMilliseconds;
 
@@ -55,30 +89,28 @@ namespace LimitedChromeManager
                 try
                 {
                     if (!ns.CanTimeout)
-                        result = "Networkstream can't timeout!";
+                        result = HTTPTaskResult
+                            .Fail(HTTPResultEnum.NOTOKEN_ERROR, 
+                                "Networkstream can't timeout!", resultObj: isCancelled());
                     else
                     {
                         ns.ReadTimeout = client.ReceiveTimeout;
                         ns.WriteTimeout = client.SendTimeout;
 
                         int bytesRecieved = 0;
-                        Stopwatch recieveTimer = new Stopwatch();
-                        recieveTimer.Start();
-                        while (recieveTimer.ElapsedMilliseconds < ns.ReadTimeout && ns.DataAvailable && !isCancelled())
-                        {
-                            bytesRecieved += ns.Read(RequestBuffer, bytesRecieved, 1024);
-                        }
-                        recieveTimer.Stop();
+                        byte[] RequestBuffer = new byte[BufferSize];
+                        string requestData = RecieveHTTPRequest(isCancelled, ns, ref bytesRecieved, RequestBuffer);
 
-                        string requestData = Encoding.ASCII.GetString(RequestBuffer, 0, bytesRecieved).ToLower();
-                        if (!requestData.EndsWith("\r\n\r\n"))
+                        if (!requestData.EndsWith(HTTPHeadersEnd))
                         {
-                            result="Error getting a valid HTTP request";
+                            result = HTTPTaskResult
+                                        .Fail(HTTPResultEnum.NOTOKEN_ERROR,
+                                            "Error getting a valid HTTP request", resultObj: isCancelled());
                         }
                         else
                         {
                             bool validReq = true;
-                            foreach(string item in findInRequest)
+                            foreach (string item in findInRequest)
                             {
                                 if (!requestData.Contains(item.ToLower()))
                                 {
@@ -89,20 +121,18 @@ namespace LimitedChromeManager
 
                             if (!validReq)
                             {
-                                result = "Didn't find all required text in request:\n" + requestData;
+                                result = HTTPTaskResult
+                                    .Fail(HTTPResultEnum.TOKEN_AUTH_ERROR,
+                                        "Didn't find all required text in request:\n" + requestData, resultObj: isCancelled());
                             }
                             else
                             {
-                                string ResponseText = @"HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Type: {0}
-Content-Length: {1}
-Connection: Closed";
-
                                 int pid = pidFromConnection(client);
                                 if (pid < 0)
                                 {
-                                    result = "Can't find token req PID owner";
+                                    result = HTTPTaskResult
+                                        .Fail(HTTPResultEnum.TOKEN_AUTH_ERROR,
+                                            "Can't find token req PID owner", resultObj: isCancelled());
                                 }
                                 else
                                 {
@@ -114,25 +144,35 @@ Connection: Closed";
 
                                     if (processPath == "" || userName == "" || userSid == "")
                                     {
-                                        result = "Error getting process information";
+                                        result = HTTPTaskResult
+                                            .Fail(HTTPResultEnum.TOKEN_AUTH_ERROR,
+                                                "Error getting process owner information", resultObj: isCancelled());
                                     }
                                     else
                                     {
 
-                                        if (
+                                        Properties.Settings config = Properties.Settings.Default;
+                                        bool isCallerAllowed = 
                                             (
-                                                Properties.Settings.Default.AllowedUserSids.ToLower().Contains(userSid.ToLower())
-                                                ||
-                                                Properties.Settings.Default.AllowedUserNames.ToLower().Contains(userName.ToLower())
+                                                config.AllowedUserSids.ToLower().Contains(userSid.ToLower())
+                                                || config.AllowedUserNames.ToLower().Contains(userName.ToLower())
                                             )
-                                            &&
-                                                Properties.Settings.Default.AllowedProcessesPaths.ToLower().Contains(processPath.ToLower())
-                                            && !isCancelled()
-                                            )
+                                            && config.AllowedProcessesPaths.ToLower().Contains(processPath.ToLower())
+                                            && !isCancelled();
+
+                                        if (!isCallerAllowed)
                                         {
-                                            ResponseText += "\r\n\r\n" + Encoding.ASCII.GetString(DataToServe);
-                                            ResponseText = ResponseText.Replace("{0}", DataContentType).Replace("{1}", DataToServe.Length.ToString());
-                                            byte[] responseBuffer = Encoding.ASCII.GetBytes(ResponseText);
+                                            result = HTTPTaskResult
+                                               .Fail(HTTPResultEnum.TOKEN_AUTH_ERROR, 
+                                                   string.Format(
+                                                        "Token acces denied problem!\nProcess: {0}\nUserSid: {1}\nUserName: {2}",
+                                                            processPath, userSid, userName
+                                                    ),
+                                                   resultObj: isCancelled());
+                                        }
+                                        else
+                                        {
+                                            byte[] responseBuffer = CreateTokenHTTPResponse(DataToServe);
 
                                             Stopwatch sendTimer = new Stopwatch();
                                             sendTimer.Start();
@@ -141,15 +181,15 @@ Connection: Closed";
 
                                             if (sendTimer.ElapsedMilliseconds >= ns.WriteTimeout)
                                             {
-                                                throw new Exception("Error sending response, got timeout.");
+                                                // Because maybe he got the token and stopped responding => TOKEN_AUTH_ERROR
+                                                result = HTTPTaskResult
+                                                    .Fail(HTTPResultEnum.TOKEN_AUTH_ERROR,
+                                                        "Error sending response, got timeout.", resultObj: isCancelled());
                                             }
-                                        }
-                                        else
-                                        {
-                                            result = (string.Format(
-                                                "Token acced denied problem!\nProcess: {0}\nUserSid: {1}\nUserName: {2}",
-                                                    processPath, userSid, userName
-                                                ));
+                                            else
+                                            {
+                                                result = HTTPTaskResult.Success(HTTPResultEnum.SUCCESS, "Token sent!");
+                                            }
                                         }
                                     }
                                 }
@@ -159,18 +199,63 @@ Connection: Closed";
                 }
                 catch (Exception ex)
                 {
-                    result = ex.ToString();
+                    result = HTTPTaskResult
+                                .Fail(HTTPResultEnum.TOKEN_AUTH_ERROR,
+                                    "Error in token process", resultObj: isCancelled(), error: ex);
                 }
                 finally
                 {
                     ns.Close();
                     client.Close();
-                    server.Stop();
+                    tcpServer.Stop();
                 }
             }
-            return "(Cancelled? " + isCancelled() + ") "+result;
+            return result;
         }
 
+        private byte[] CreateTokenHTTPResponse(byte[] DataToServe)
+        {
+            string HTTPResponseTemplate = string.Join("\r\n", new[]
+                                                        {
+                                                "HTTP/1.1 200 OK",
+                                                "Access-Control-Allow-Origin: *",
+                                                "Content-Type: {0}",
+                                                "Content-Length: {1}",
+                                                "Connection: Closed"
+                                            });
+            HTTPResponseTemplate += HTTPHeadersEnd + Encoding.ASCII.GetString(DataToServe);
+            HTTPResponseTemplate = HTTPResponseTemplate
+                .Replace("{0}", DataContentType)
+                .Replace("{1}", DataToServe.Length.ToString());
+            byte[] responseBuffer = Encoding.ASCII.GetBytes(HTTPResponseTemplate);
+            return responseBuffer;
+        }
+
+        private static string RecieveHTTPRequest(Func<bool> isCancelled, NetworkStream ns, ref int bytesRecieved, byte[] RequestBuffer)
+        {
+            Stopwatch recieveTimer = new Stopwatch();
+            recieveTimer.Start();
+            while (recieveTimer.ElapsedMilliseconds < ns.ReadTimeout && ns.DataAvailable && !isCancelled())
+            {
+                bytesRecieved += ns.Read(RequestBuffer, bytesRecieved, 1024);
+            }
+            recieveTimer.Stop();
+
+            string requestData = Encoding.ASCII.GetString(RequestBuffer, 0, bytesRecieved).ToLower();
+            return requestData;
+        }
+
+        private int WaitForTcpClient(Func<bool> isCancelled, TcpListener server, int acceptTimePassedMS)
+        {
+            while (!server.Pending() && acceptTimePassedMS < AcceptTimeout.TotalMilliseconds && !isCancelled())
+            {
+                int timeToSleepMS = (int)SleepInterval.TotalMilliseconds;
+                Thread.Sleep(timeToSleepMS);
+                acceptTimePassedMS += timeToSleepMS;
+            }
+
+            return acceptTimePassedMS;
+        }
 
         public static bool IsLocalIpAddress(string host)
         {
