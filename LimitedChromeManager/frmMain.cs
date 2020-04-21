@@ -127,14 +127,17 @@ namespace LimitedChromeManager
             log("5 second thread done.");
         }
 
-        public void waitForCancel_example()
+        public int waitForCancel_example()
         {
+            int timeSlept = 0;
             log("cancel thread started...");
             while (!Flags.USER_CANCEL)
             {
                 Thread.Sleep((int)TimeSpan.FromSeconds(1).TotalMilliseconds);
+                timeSlept++;
             }
             log("cancel thread done.");
+            return timeSlept;
         }
 
         public void oneTimeTokenHTTPThread()
@@ -178,11 +181,18 @@ namespace LimitedChromeManager
             wait5.Join();
             */
 
-            Thread http = new Thread(oneTimeTokenHTTPThread);
-            http.Start();
-            
-            
-            http.Join();
+            //Thread http = new Thread(oneTimeTokenHTTPThread);
+            //http.Start();
+            //http.Join();
+
+            ThreadTask<int> waitCancel = new ThreadTask<int>(waitForCancel_example);
+            waitCancel.Start();
+
+            if (waitCancel.Join())
+            {
+                log("Waited " + waitCancel.Result() + " Times");
+            }
+
             log("All Done threads!");
         }
 

@@ -51,11 +51,12 @@ namespace LimitedChromeManager
 
         public int processCount()
         {
-            return ProcessUserLoop( (p) => { });
+            return ProcessUserLoop(null);
         }
 
         void startProcessWatch_EventArrived(object sender, EventArrivedEventArgs e)
         {
+            // TODO: Check if process is son of ok process and path is ok if son of ok and path problem -> problem
             Console.WriteLine("Process started: {0}"
                               , e.NewEvent.Properties["ProcessName"].Value);
         }
@@ -117,6 +118,8 @@ namespace LimitedChromeManager
                     {
                         Thread.Sleep((int)sleepInterval.TotalMilliseconds);
                     }
+
+                    // TODO: Cancel if unkown process
 
                     if ((isCancelled?.Invoke() ?? false))
                     {
