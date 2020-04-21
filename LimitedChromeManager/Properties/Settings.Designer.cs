@@ -55,25 +55,13 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Yoni;")]
-        public string AllowedUserNames {
+        [global::System.Configuration.DefaultSettingValueAttribute("Yoni")]
+        public string LimitedUserName {
             get {
-                return ((string)(this["AllowedUserNames"]));
+                return ((string)(this["LimitedUserName"]));
             }
             set {
-                this["AllowedUserNames"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string AllowedUserSids {
-            get {
-                return ((string)(this["AllowedUserSids"]));
-            }
-            set {
-                this["AllowedUserSids"] = value;
+                this["LimitedUserName"] = value;
             }
         }
         

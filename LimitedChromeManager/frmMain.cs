@@ -26,7 +26,8 @@ namespace LimitedChromeManager
             "STEP_WAIT|Wait for chrome to exit", //Long (on exit from monitor- check if processes > 0)
             "STEP_DONE|Done!",
             "STEP_|",
-            "STEP_ERROR|ERROR - check logs"
+            "STEP_TOKEN_ERROR|Token error - close all process"
+            "STEP_ERROR|ERROR (General)"
         };
 
         public static class Flags
@@ -142,29 +143,46 @@ namespace LimitedChromeManager
 
         public void oneTimeTokenHTTPThread()
         {
+            log("Starting HTTP Token server...");
+            checkItem("STEP_HTTP");
+
             OneTimeHTTPRequest server = new OneTimeHTTPRequest()
             {
                 findInRequest = Properties.Settings.Default.RequestFindings.Split(';')
             };
-            try
+
+            ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask = new ThreadTask<OneTimeHTTPRequest.HTTPTaskResult>(
+                () => { return server.StartListener(IPAddress.Loopback, 6667, () => Flags.USER_CANCEL); }
+            );
+            httpTask.Start();
+
+            // ============================ Split into 2, Join is only after opening chrome in limited
+
+            if (httpTask.Join())
             {
-                log("Starting HTTP Token server...");
-                checkItem("STEP_HTTP");
-                string error = server.StartListener(IPAddress.Loopback, 6667,()=>Flags.USER_CANCEL);
-                if (error == "")
+                OneTimeHTTPRequest.HTTPTaskResult httpTaskResult = httpTask.Result();
+                switch (httpTaskResult.StatusCode)
                 {
-                    checkItem("STEP_TOKEN");
-                    log("Token sucess!!");
-                }
-                else
-                {
-                    log("Error serving token\n" + error);
-                    checkItem("STEP_ERROR");
+                    case OneTimeHTTPRequest.HTTPResultEnum.SUCCESS:
+                        checkItem("STEP_TOKEN");
+                        log("Token sucess!!");
+                        break;
+                    case OneTimeHTTPRequest.HTTPResultEnum.NOTOKEN_ERROR:
+                        log("Error serving token\n" + httpTaskResult.description);
+                        checkItem("STEP_ERROR");
+                        break;
+                    case OneTimeHTTPRequest.HTTPResultEnum.TOKEN_AUTH_ERROR:
+                        checkItem("STEP_TOKEN_ERROR");
+                        log("Error that might risk the token, closing all processes in user, error: " +
+                            httpTaskResult.description);
+                        new ProcessWatcher(LimitedChromeManager.Properties.Settings.Default.LimitedUserName)
+                            .KillAllUserProcesses();
+                        break;
                 }
             }
-            catch (Exception ex)
+            else
             {
-                log("Error serving token\n" + ex.ToString());
+                log("Error serving token\n" + httpTask.GetError());
                 checkItem("STEP_ERROR");
             }
         }
