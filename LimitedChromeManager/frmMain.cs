@@ -18,13 +18,10 @@ namespace LimitedChromeManager
     {
         string[] steps =
         {
-            "STEP_PROTECT|Protect from closing",
-            "STEP_MONITOR|Monitor processes in limited user", // Long
             "STEP_CLEAN|Close all existing process in limited user",
             "STEP_HTTP|Start HTTP token server", //Long - 1 Request-
             "STEP_CHROME|Run limited chrome",
             "STEP_TOKEN|Chrome requested token",
-            "STEP_WAIT|Wait for chrome to exit", //Long (on exit from monitor- check if processes > 0)
             "STEP_DONE|Done!",
             "STEP_|",
             "STEP_TOKEN_ERROR|Token error - close all process",

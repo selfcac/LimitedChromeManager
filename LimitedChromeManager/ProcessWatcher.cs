@@ -53,10 +53,5 @@ namespace LimitedChromeManager
             return ProcessUserLoop( (p) => { if (!p.HasExited) {p.Kill(); } });
         }
 
-        public int processCount()
-        {
-            return ProcessUserLoop(null);
-        }
-
     }
 }
