@@ -141,7 +141,8 @@ namespace LimitedChromeManager
             return timeSlept;
         }
 
-        public void oneTimeTokenHTTPThread()
+
+        public void startHTTPThread(ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask)
         {
             log("Starting HTTP Token server...");
             checkItem("STEP_HTTP");
@@ -151,12 +152,13 @@ namespace LimitedChromeManager
                 findInRequest = Properties.Settings.Default.RequestFindings.Split(';')
             };
 
-            ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask = new ThreadTask<OneTimeHTTPRequest.HTTPTaskResult>(
+            httpTask = new ThreadTask<OneTimeHTTPRequest.HTTPTaskResult>(
                 () => { return server.StartListener(IPAddress.Loopback, 6667, () => Flags.USER_CANCEL); }
             );
             httpTask.Start();
+        }
 
-            // ============================ Split into 2, Join is only after opening chrome in limited
+        public void joinHTTPThread(ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask) { 
 
             if (httpTask.Join())
             {
@@ -175,7 +177,7 @@ namespace LimitedChromeManager
                         checkItem("STEP_TOKEN_ERROR");
                         log("Error that might risk the token, closing all processes in user, error: " +
                             httpTaskResult.description);
-                        new ProcessWatcher(LimitedChromeManager.Properties.Settings.Default.LimitedUserName)
+                        new ProcessWatcher(LimitedChromeManager.Properties.Settings.Default.LimitedUserName, (log)=> { })
                             .KillAllUserProcesses();
                         break;
                 }
