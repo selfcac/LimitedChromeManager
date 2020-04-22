@@ -12,6 +12,8 @@ namespace LimitedChromeManager
 {
     public class ProcessWatcher
     {
+        //https://qa.social.msdn.microsoft.com/Forums/vstudio/en-US/5da98f49-cf3d-4eef-a302-feb87d9342ab/how-can-i-detect-when-a-prog-opened-with-shell-is-closed-quotexplorerexequot?forum=vbgeneral
+
         LocalGroupsAndUsers usersInfo = new LocalGroupsAndUsers();
         string Username;
         Action<string> log;
@@ -60,7 +62,12 @@ namespace LimitedChromeManager
 
         object GetProp<TEnum>(EventArrivedEventArgs e, TEnum prop )
         {
-            return e.NewEvent[prop.ToString()];
+            return e.NewEvent.GetPropertyValue(prop.ToString());
+        }
+
+        object GetProp<TEnum>(ManagementBaseObject mbo, TEnum prop)
+        {
+            return mbo.GetPropertyValue(prop.ToString());
         }
 
         void startProcessWatch_EventArrived(object sender, EventArrivedEventArgs e)
@@ -79,23 +86,38 @@ namespace LimitedChromeManager
 
         void stopProcessWatch_EventArrived(object sender, EventArrivedEventArgs e)
         {
-            log(string.Format("Process STOP: [{0}] [{1}] ID: {2} from {3}",
-                    usersInfo.getUserName(
+            string myUser = "";
+            try
+            {
+                myUser = usersInfo.getUserName(
                         new System.Security.Principal.SecurityIdentifier((byte[])GetProp(e, WMI.EWin32_Stop.Sid), 0).Value
-                    ),
-                    GetProp(e, WMI.EWin32_Stop.ProcessName),
-                    GetProp(e, WMI.EWin32_Stop.ProcessID),
-                    GetProp(e, WMI.EWin32_Stop.ParentProcessID)
+                    );
+            }catch (Exception){}
+
+            log(string.Format("Process STOP: [{0}] [{1}] ID: {2} from {3}",
+                    myUser,
+                    GetProp(e, WMI.EWin32_Stop.ProcessName) ?? "",
+                    GetProp(e, WMI.EWin32_Stop.ProcessID) ?? "",
+                    GetProp(e, WMI.EWin32_Stop.ParentProcessID) ?? ""
             ));
         }
 
-        void newProcessInstance_EventArrived(object sender, EventArrivedEventArgs e)
+        void newProcessInstance_EventArrived(object sender, EventArrivedEventArgs mainArgs)
         {
-            log(string.Format("Process NEW: ID:{0} from {1} Path: {2}",
-                    GetProp(e, WMI.EWin32_Process.ProcessId),
-                    GetProp(e, WMI.EWin32_Process.ParentProcessId),
-                    GetProp(e, WMI.EWin32_Process.ExecutablePath)
-                ));
+            try
+            {
+                var p = mainArgs.NewEvent.GetPropertyValue("TargetInstance") as ManagementBaseObject;
+                if (p != null)
+                {
+                    log(string.Format("Process NEW: ID:{0} from {1} Path: {2}",
+                         GetProp(p, WMI.EWin32_Process.ProcessId) ?? "",
+                         GetProp(p, WMI.EWin32_Process.ParentProcessId) ?? "",
+                         GetProp(p, WMI.EWin32_Process.ExecutablePath) ?? ""
+                     ));
+                }
+            }
+            catch (ManagementException) { 
+            }
         }
 
 
@@ -125,16 +147,17 @@ namespace LimitedChromeManager
                                 += new EventArrivedEventHandler(startProcessWatch_EventArrived);
         https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-process
             ManagementEventWatcher newProcessInstanceWatch = new ManagementEventWatcher(
-                new WqlEventQuery("SELECT * FROM __InstanceCreationEvent where TargetInstance ISA 'Win32_Process'"));
+                // WITHIN 1 - within 1 second from creation https://gist.github.com/VictorZhang2014/a58975a9bc1d530cf7ad6362bfac2fd0
+                new WqlEventQuery("SELECT * FROM __InstanceCreationEvent WITHIN 5 WHERE TargetInstance ISA 'Win32_Process'"));
             newProcessInstanceWatch.EventArrived
                                 += new EventArrivedEventHandler(newProcessInstance_EventArrived);
 
-            openProcessWatch.Start();
-            newProcessInstanceWatch.Start();
-            closeProcessWatch.Start();
-
             try
             {
+                //openProcessWatch.Start();
+                newProcessInstanceWatch.Start();
+                //closeProcessWatch.Start();
+
                 // Kill all
                 KillAllUserProcesses();
 
@@ -168,11 +191,12 @@ namespace LimitedChromeManager
             {
                 error = ex.ToString();
             }
-
-            openProcessWatch.Stop();
-            newProcessInstanceWatch.Stop();
-            closeProcessWatch.Stop();
-
+            finally
+            {
+                //openProcessWatch.Stop();
+                newProcessInstanceWatch.Stop();
+                //closeProcessWatch.Stop();
+            }
             return error;
         }
 

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -26,7 +27,7 @@ namespace LimitedChromeManager
             "STEP_WAIT|Wait for chrome to exit", //Long (on exit from monitor- check if processes > 0)
             "STEP_DONE|Done!",
             "STEP_|",
-            "STEP_TOKEN_ERROR|Token error - close all process"
+            "STEP_TOKEN_ERROR|Token error - close all process",
             "STEP_ERROR|ERROR (General)"
         };
 
@@ -79,6 +80,7 @@ namespace LimitedChromeManager
         public void log(object data)
         {
             string message = string.Format("[{0}] {1}\n", DateTime.Now.ToLongTimeString(), data?.ToString() ?? "<Empty>");
+            File.AppendAllText("log.txt", message);
             InvokeF(rtbLog, () => { rtbLog.Text = message + rtbLog.Text; });
         }
 
@@ -205,12 +207,34 @@ namespace LimitedChromeManager
             //http.Start();
             //http.Join();
 
-            ThreadTask<int> waitCancel = new ThreadTask<int>(waitForCancel_example);
-            waitCancel.Start();
+            //ThreadTask<int> waitCancel = new ThreadTask<int>(waitForCancel_example);
+            //waitCancel.Start();
 
-            if (waitCancel.Join())
+            //if (waitCancel.Join())
+            //{
+            //    log("Waited " + waitCancel.Result() + " Times");
+            //}
+
+            ThreadTask<string> monitorThread = new ThreadTask<string>(() =>
             {
-                log("Waited " + waitCancel.Result() + " Times");
+                ProcessWatcher pw = new ProcessWatcher(
+                        LimitedChromeManager.Properties.Settings.Default.LimitedUserName,
+                        (msg)=> { log(msg); }
+                    );
+                return pw.StartWatchUntilAllClose(
+                        LimitedChromeManager.Properties.Settings.Default.AllowedProcessesPaths.Split(';'),
+                        ()=>Flags.USER_CANCEL
+                    );
+            });
+            log("Starting monitor");
+            monitorThread.Start();
+            if(monitorThread.Join())
+            {
+                log(monitorThread.Result());
+            }
+            else
+            {
+                log(monitorThread.GetError().ToString());
             }
 
             log("All Done threads!");
