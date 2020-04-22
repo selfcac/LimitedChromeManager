@@ -121,8 +121,9 @@ namespace LimitedChromeManager
 
                             if (!validReq)
                             {
+                                // Because we also check Agent header here, so from this point it is all security
                                 result = HTTPTaskResult
-                                    .Fail(HTTPResultEnum.TOKEN_AUTH_ERROR,
+                                    .Fail(HTTPResultEnum.TOKEN_AUTH_ERROR, 
                                         "Didn't find all required text in request:\n" + requestData, resultObj: isCancelled());
                             }
                             else
@@ -178,7 +179,7 @@ namespace LimitedChromeManager
 
                                             if (sendTimer.ElapsedMilliseconds >= ns.WriteTimeout)
                                             {
-                                                // Because maybe he got the token and stopped responding => TOKEN_AUTH_ERROR
+                                                // Because maybe he got the token and stopped responding (reading) => TOKEN_AUTH_ERROR
                                                 result = HTTPTaskResult
                                                     .Fail(HTTPResultEnum.TOKEN_AUTH_ERROR,
                                                         "Error sending response, got timeout.", resultObj: isCancelled());
