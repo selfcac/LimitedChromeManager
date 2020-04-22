@@ -60,6 +60,7 @@
     <Compile Include="ResultObject.cs" />
     <Compile Include="SimpleWrapper.cs" />
     <Compile Include="ThreadTask.cs" />
+    <Compile Include="WMI\Win32_Process.cs" />
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>
     </EmbeddedResource>

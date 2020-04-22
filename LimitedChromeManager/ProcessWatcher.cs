@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Socket2Process;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -11,12 +12,15 @@ namespace LimitedChromeManager
 {
     public class ProcessWatcher
     {
+        LocalGroupsAndUsers usersInfo = new LocalGroupsAndUsers();
         string Username;
+        Action<string> log;
         public TimeSpan sleepInterval = TimeSpan.FromSeconds(2);
 
-        public ProcessWatcher(string username)
+        public ProcessWatcher(string username, Action<string> logger)
         {
             this.Username = username;
+            this.log = (data) => { logger?.Invoke(data); };
         }
 
         int ProcessUserLoop(Action<Process> mainLoop)
@@ -54,18 +58,44 @@ namespace LimitedChromeManager
             return ProcessUserLoop(null);
         }
 
+        object GetProp<TEnum>(EventArrivedEventArgs e, TEnum prop )
+        {
+            return e.NewEvent[prop.ToString()];
+        }
+
         void startProcessWatch_EventArrived(object sender, EventArrivedEventArgs e)
         {
             // TODO: Check if process is son of ok process and path is ok if son of ok and path problem -> problem
-            Console.WriteLine("Process started: {0}"
-                              , e.NewEvent.Properties["ProcessName"].Value);
+            log(string.Format("Process START: [{0}] [{1}] {2}  son of {3} ",
+                    usersInfo.getUserName(
+                        new System.Security.Principal.SecurityIdentifier((byte[])GetProp(e, WMI.EWin32_Start.Sid), 0).Value
+                    ),
+                    GetProp(e, WMI.EWin32_Start.ProcessName),
+                    GetProp(e, WMI.EWin32_Start.ProcessID),
+                    GetProp(e, WMI.EWin32_Start.ParentProcessID)                   
+            ));
         }
 
 
         void stopProcessWatch_EventArrived(object sender, EventArrivedEventArgs e)
         {
-            Console.WriteLine("Process started: {0}"
-                              , e.NewEvent.Properties["ProcessName"].Value);
+            log(string.Format("Process STOP: [{0}] [{1}] ID: {2} from {3}",
+                    usersInfo.getUserName(
+                        new System.Security.Principal.SecurityIdentifier((byte[])GetProp(e, WMI.EWin32_Stop.Sid), 0).Value
+                    ),
+                    GetProp(e, WMI.EWin32_Stop.ProcessName),
+                    GetProp(e, WMI.EWin32_Stop.ProcessID),
+                    GetProp(e, WMI.EWin32_Stop.ParentProcessID)
+            ));
+        }
+
+        void newProcessInstance_EventArrived(object sender, EventArrivedEventArgs e)
+        {
+            log(string.Format("Process NEW: ID:{0} from {1} Path: {2}",
+                    GetProp(e, WMI.EWin32_Process.ProcessId),
+                    GetProp(e, WMI.EWin32_Process.ParentProcessId),
+                    GetProp(e, WMI.EWin32_Process.ExecutablePath)
+                ));
         }
 
 
@@ -83,18 +113,25 @@ namespace LimitedChromeManager
             string error = "";
 
             // Start watch for start stop
+            //https://docs.microsoft.com/en-us/previous-versions/windows/desktop/krnlprov/win32-processstarttrace
             ManagementEventWatcher openProcessWatch = new ManagementEventWatcher(
                 new WqlEventQuery("SELECT * FROM Win32_ProcessStartTrace"));
             openProcessWatch.EventArrived
                                 += new EventArrivedEventHandler(startProcessWatch_EventArrived);
+            //https://docs.microsoft.com/en-us/previous-versions/windows/desktop/krnlprov/win32-processstoptrace
             ManagementEventWatcher closeProcessWatch = new ManagementEventWatcher(
                 new WqlEventQuery("SELECT * FROM Win32_ProcessStopTrace"));
             closeProcessWatch.EventArrived
                                 += new EventArrivedEventHandler(startProcessWatch_EventArrived);
+        https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-process
+            ManagementEventWatcher newProcessInstanceWatch = new ManagementEventWatcher(
+                new WqlEventQuery("SELECT * FROM __InstanceCreationEvent where TargetInstance ISA 'Win32_Process'"));
+            newProcessInstanceWatch.EventArrived
+                                += new EventArrivedEventHandler(newProcessInstance_EventArrived);
 
             openProcessWatch.Start();
+            newProcessInstanceWatch.Start();
             closeProcessWatch.Start();
-
 
             try
             {
@@ -114,7 +151,7 @@ namespace LimitedChromeManager
                     closedCount = 0;
 
                     // Sleep untill : closed = opened + Enable cancelling
-                    while (openedCount > closedCount && !(isCancelled?.Invoke() ?? false))
+                    while (!(isCancelled?.Invoke() ?? false) ) // && openedCount > closedCount)
                     {
                         Thread.Sleep((int)sleepInterval.TotalMilliseconds);
                     }
@@ -133,6 +170,7 @@ namespace LimitedChromeManager
             }
 
             openProcessWatch.Stop();
+            newProcessInstanceWatch.Stop();
             closeProcessWatch.Stop();
 
             return error;
