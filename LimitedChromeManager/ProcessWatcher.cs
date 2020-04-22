@@ -18,7 +18,7 @@ namespace LimitedChromeManager
         string Username;
         public TimeSpan sleepInterval = TimeSpan.FromSeconds(2);
 
-        public ProcessWatcher(string username, Action<string> logger)
+        public ProcessWatcher(string username)
         {
             this.Username = username;
         }
