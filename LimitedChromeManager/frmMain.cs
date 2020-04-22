@@ -215,28 +215,6 @@ namespace LimitedChromeManager
             //    log("Waited " + waitCancel.Result() + " Times");
             //}
 
-            ThreadTask<string> monitorThread = new ThreadTask<string>(() =>
-            {
-                ProcessWatcher pw = new ProcessWatcher(
-                        LimitedChromeManager.Properties.Settings.Default.LimitedUserName,
-                        (msg)=> { log(msg); }
-                    );
-                return pw.StartWatchUntilAllClose(
-                        LimitedChromeManager.Properties.Settings.Default.AllowedProcessesPaths.Split(';'),
-                        ()=>Flags.USER_CANCEL
-                    );
-            });
-            log("Starting monitor");
-            monitorThread.Start();
-            if(monitorThread.Join())
-            {
-                log(monitorThread.Result());
-            }
-            else
-            {
-                log(monitorThread.GetError().ToString());
-            }
-
             log("All Done threads!");
         }
 
