@@ -23,11 +23,16 @@ namespace LimitedChromeManager
             this.Username = username;
         }
 
-        int ProcessUserLoop(Action<Process> mainLoop)
+        int ProcessUserLoop(Action<Process> mainLoop, Func<bool> isCanceled)
         {
             int processWithoutErrors = 0;
             foreach (Process p in Process.GetProcesses())
             {
+                if (isCanceled?.Invoke() ?? false)
+                {
+                    processWithoutErrors = -1;
+                    break;
+                }
                 try
                 {
                     Socket2Process.LocalGroupsAndUsers users = new Socket2Process.LocalGroupsAndUsers();
@@ -48,9 +53,12 @@ namespace LimitedChromeManager
             return processWithoutErrors;
         }
 
-        public int KillAllUserProcesses()
+        public int KillAllUserProcesses(Func<bool> isCanceled)
         {
-            return ProcessUserLoop( (p) => { if (!p.HasExited) {p.Kill(); } });
+            return ProcessUserLoop(
+                (p) => { if (!p.HasExited) {p.Kill(); } },
+                isCanceled
+            );
         }
 
     }

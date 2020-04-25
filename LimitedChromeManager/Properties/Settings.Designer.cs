@@ -25,15 +25,6 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string chromPSExec {
-            get {
-                return ((string)(this["chromPSExec"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("123123")]
         public string token {
             get {
@@ -41,51 +32,58 @@ namespace LimitedChromeManager.Properties {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;")]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;C:\\Windows\\System32\\cmd.exe;")]
         public string AllowedProcessesPaths {
             get {
                 return ((string)(this["AllowedProcessesPaths"]));
             }
-            set {
-                this["AllowedProcessesPaths"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Yoni")]
+        [global::System.Configuration.DefaultSettingValueAttribute("ChromeLimited")]
         public string LimitedUserName {
             get {
                 return ((string)(this["LimitedUserName"]));
             }
-            set {
-                this["LimitedUserName"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("/get/token;Agent: selfc-ext")]
         public string RequestFindings {
             get {
                 return ((string)(this["RequestFindings"]));
             }
-            set {
-                this["RequestFindings"] = value;
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("120")]
+        public int RequestTimeoutSec {
+            get {
+                return ((int)(this["RequestTimeoutSec"]));
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string chromeLaunchCommand {
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\ProxyServices\\ProxyFilteredChrome\\RunAsUserInteractive.exe")]
+        public string ProcessToRun {
             get {
-                return ((string)(this["chromeLaunchCommand"]));
+                return ((string)(this["ProcessToRun"]));
             }
-            set {
-                this["chromeLaunchCommand"] = value;
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\ProxyServices\\ProxyFilteredChrome\\PsExec.exe -- -accepteula -d -i {i} -u Chrom" +
+            "eLimited -p 6666 -w C:\\Windows\\System32\\ C:\\Windows\\System32\\cmd.exe ")]
+        public string ProcessToRunArgs {
+            get {
+                return ((string)(this["ProcessToRunArgs"]));
             }
         }
     }

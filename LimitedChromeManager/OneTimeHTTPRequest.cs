@@ -29,13 +29,27 @@ namespace LimitedChromeManager
             public static new HTTPTaskResult 
                 Fail(HTTPResultEnum statusCode, string desc, SimpleWrapper<bool> resultObj = default, Exception error = null)
             {
-                return (HTTPTaskResult)ResultObject<SimpleWrapper<bool>, HTTPResultEnum>.Fail(statusCode, desc, resultObj, error);
+                HTTPTaskResult result = new HTTPTaskResult()
+                {
+                    IsSuccess = false,
+                    StatusCode = statusCode,
+                    description = desc,
+                    Error = error
+                };
+                return result;
             }
 
             public static new HTTPTaskResult
                 Success(HTTPResultEnum statusCode, string desc, SimpleWrapper<bool> resultObj = default, Exception error = null)
             {
-                return (HTTPTaskResult)ResultObject<SimpleWrapper<bool>, HTTPResultEnum>.Success(statusCode, desc, resultObj, error);
+                HTTPTaskResult result = new HTTPTaskResult()
+                {
+                    IsSuccess = true,
+                    StatusCode = statusCode,
+                    description = desc,
+                    Result = resultObj
+                };
+                return result;
             }
         }
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.IO;
@@ -20,8 +21,8 @@ namespace LimitedChromeManager
         {
             "STEP_CLEAN|Close all existing process in limited user",
             "STEP_HTTP|Start HTTP token server", //Long - 1 Request-
-            "STEP_CHROME|Run limited chrome",
-            "STEP_TOKEN|Chrome requested token",
+            "STEP_CHROME|Run limited browser",
+            "STEP_TOKEN|Browser ext requested token",
             "STEP_DONE|Done!",
             "STEP_|",
             "STEP_TOKEN_ERROR|Token error - close all process",
@@ -141,14 +142,12 @@ namespace LimitedChromeManager
         }
 
 
-        public void startHTTPThread(out ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask)
+        public void startHTTPThread(out ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask, int acceptTimeoutSec)
         {
-            log("Starting HTTP Token server...");
-            checkItem("STEP_HTTP");
-
             OneTimeHTTPRequest server = new OneTimeHTTPRequest()
             {
-                findInRequest = Properties.Settings.Default.RequestFindings.Split(';')
+                findInRequest = Properties.Settings.Default.RequestFindings.Split(';'),
+                AcceptTimeout = TimeSpan.FromSeconds(acceptTimeoutSec)
             };
 
             httpTask = new ThreadTask<OneTimeHTTPRequest.HTTPTaskResult>(
@@ -157,7 +156,7 @@ namespace LimitedChromeManager
             httpTask.Start();
         }
 
-        public void joinHTTPThread(ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask) { 
+        public void joinHTTPThread(ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask, bool killOnTokenError) { 
 
             if (httpTask.Join())
             {
@@ -174,10 +173,14 @@ namespace LimitedChromeManager
                         break;
                     case OneTimeHTTPRequest.HTTPResultEnum.TOKEN_AUTH_ERROR:
                         checkItem("STEP_TOKEN_ERROR");
-                        log("Error that might risk the token, closing all processes in user, error: " +
+                        log("Error that might risk the token, error: " +
                             httpTaskResult.description);
-                        new ProcessWatcher(LimitedChromeManager.Properties.Settings.Default.LimitedUserName)
-                            .KillAllUserProcesses();
+                        if (killOnTokenError)
+                        {
+                            log("closing all processes in user because token error");
+                            new ProcessWatcher(LimitedChromeManager.Properties.Settings.Default.LimitedUserName)
+                                .KillAllUserProcesses(()=>false);
+                        }
                         break;
                 }
             }
@@ -200,24 +203,39 @@ namespace LimitedChromeManager
             wait5.Join();
             */
 
-            //Thread http = new Thread(oneTimeTokenHTTPThread);
-            //http.Start();
-            //http.Join();
+            // Steps:
+            // =====================================
+            ProcessWatcher pw = new ProcessWatcher(Properties.Settings.Default.LimitedUserName);
 
-            //ThreadTask<int> waitCancel = new ThreadTask<int>(waitForCancel_example);
-            //waitCancel.Start();
+            // 1. Close all apps in LimitedChrome
+            checkItem("STEP_CLEAN");
+            log("Closing apps in limited user...");
+            int closedProcesses = pw.KillAllUserProcesses(()=>Flags.USER_CANCEL);
+            log("Closed " + closedProcesses + " apps in limited user");
+            setProgress(20);
 
-            //if (waitCancel.Join())
-            //{
-            //    log("Waited " + waitCancel.Result() + " Times");
-            //}
+            // 3. Start HTTP Token server (Has accept timout)
+            log("Starting HTTP Token server...");
+            checkItem("STEP_HTTP");
+            ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask = null;
+            startHTTPThread(out httpTask, Properties.Settings.Default.RequestTimeoutSec);
+            setProgress(40);
 
-            ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask;
-            startHTTPThread(out httpTask);
-            //joinHTTPThread(httpTask);
-            httpTask.Join();
+            // 4. Run chrome limited
+            Process p = Process.Start(
+                    Properties.Settings.Default.ProcessToRun,
+                    Properties.Settings.Default.ProcessToRunArgs
+                );
+            checkItem("STEP_CHROME");
+            setProgress(60);
+
+            // 5. Wait for HTTP thread to join
+            setProgress(-1);
+            joinHTTPThread(httpTask, killOnTokenError: true);
+            setProgress(80);
 
             log("All Done threads!");
+            setProgress(100);
         }
 
        
