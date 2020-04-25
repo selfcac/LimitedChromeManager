@@ -76,5 +76,17 @@ namespace LimitedChromeManager.Properties {
                 this["RequestFindings"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string chromeLaunchCommand {
+            get {
+                return ((string)(this["chromeLaunchCommand"]));
+            }
+            set {
+                this["chromeLaunchCommand"] = value;
+            }
+        }
     }
 }

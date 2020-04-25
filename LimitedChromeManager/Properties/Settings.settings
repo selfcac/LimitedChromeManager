@@ -17,5 +17,8 @@
     <Setting Name="RequestFindings" Type="System.String" Scope="User">
       <Value Profile="(Default)">/get/token;Agent: selfc-ext</Value>
     </Setting>
+    <Setting Name="chromeLaunchCommand" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>
