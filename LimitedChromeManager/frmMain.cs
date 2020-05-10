@@ -146,12 +146,14 @@ namespace LimitedChromeManager
         }
 
 
-        public void startHTTPThread(out ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask, int acceptTimeoutSec)
+        public void startHTTPThread(out ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask,
+            string token, int acceptTimeoutSec)
         {
             OneTimeHTTPRequest server = new OneTimeHTTPRequest()
             {
                 findInRequest = Properties.Settings.Default.RequestFindings.Split(';'),
-                AcceptTimeout = TimeSpan.FromSeconds(acceptTimeoutSec)
+                AcceptTimeout = TimeSpan.FromSeconds(acceptTimeoutSec),
+                DataToServe = Encoding.ASCII.GetBytes(token)
             };
 
             httpTask = new ThreadTask<OneTimeHTTPRequest.HTTPTaskResult>(
@@ -246,7 +248,7 @@ namespace LimitedChromeManager
             int step = 100 / 6;
 
             // 0. Token Challenge
-            TokenChallenge();
+            string token = TokenChallenge();
             checkItem("STEP_TOKEN_CHALL");
             setProgress(step * 1);
 
@@ -271,7 +273,7 @@ namespace LimitedChromeManager
             log("Starting HTTP Token server...");
             checkItem("STEP_HTTP");
             ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask = null;
-            startHTTPThread(out httpTask, Properties.Settings.Default.RequestTimeoutSec);
+            startHTTPThread(out httpTask,token, Properties.Settings.Default.RequestTimeoutSec);
             setProgress(step * 3);
 
             // 4. Run chrome limited
@@ -284,14 +286,14 @@ namespace LimitedChromeManager
 
             // 5. Wait for HTTP thread to join
             setProgress(-1);
-            joinHTTPThread(httpTask, killOnTokenError: true);
+            joinHTTPThread(httpTask, killOnTokenError: Properties.Settings.Default.shouldKillProcessAtStart);
             setProgress(step * 5);
 
             log("All Done threads!");
             setProgress(100);
         }
 
-        private void TokenChallenge()
+        private string TokenChallenge()
         {
             string[] req_proxy = Properties.Settings.Default.proxyString.Split(':');
             WebProxy myProxy = null; // For development porpuses
@@ -321,23 +323,28 @@ namespace LimitedChromeManager
                         method: "POST", body: JsonSerializer.Serialize(token_start_args))
             );
 
-            string hashed_file_path = start_info.GetProperty("path").GetString();
-            string challenge_not_hashed = start_info.GetProperty("challenge").GetString();
-
-            if (!File.Exists(hashed_file_path))
+            var startResult = new
             {
-                log("Got invalid file path: '" + hashed_file_path + "'");
+                error = start_info.GetProperty("error").GetBoolean(),
+                errortext = start_info.GetProperty("errortext").GetString(),
+                path = start_info.GetProperty("path").GetString(),
+                challenge = start_info.GetProperty("challenge").GetString()
+            };
+
+            if (startResult.error || !File.Exists(startResult.path))
+            {
+                log("Got invalid file path: '" + startResult.path + "',\n error: '" + startResult.errortext + "'");
             }
             else 
             { 
                 log("Got token solution path");
 
-                string challenge_solution = File.ReadAllText(hashed_file_path);
+                string challenge_solution = File.ReadAllText(startResult.path);
 
                 var token_verify_args = new
                 {
                     user_key = mySalt,
-                    challenge = challenge_not_hashed,
+                    challenge = startResult.challenge,
                     proof = challenge_solution
                 };
 
@@ -346,19 +353,25 @@ namespace LimitedChromeManager
                             method: "POST", body: JsonSerializer.Serialize(token_verify_args))
                 );
 
-                bool verify_hasError = verify_info.GetProperty("error").GetBoolean();
-                string verify_errorText = verify_info.GetProperty("errortext").GetString();
-                string token = verify_info.GetProperty("token").GetString();
-
-                if (verify_hasError)
+                var verifyResults = new
                 {
-                    log("Token error: " + verify_errorText);
+                    error = verify_info.GetProperty("error").GetBoolean(),
+                    errortext = verify_info.GetProperty("errortext").GetString(),
+                    token = verify_info.GetProperty("token").GetString()
+                };
+
+                if (verifyResults.error)
+                {
+                    log("Token error: " + verifyResults.errortext);
                 }
                 else
                 {
-                    log("Got Token! Length " + token.Length);
+                    log("Got Token! Length " + verifyResults.token.Length);
+                    return verifyResults.token;
                 }
             }
+
+            return "";
         }
 
     }

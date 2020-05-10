@@ -2,9 +2,6 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="LimitedChromeManager.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="token" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">123123</Value>
-    </Setting>
     <Setting Name="AllowedProcessesPaths" Type="System.String" Scope="Application">
       <Value Profile="(Default)">C:\Windows\System32\curl.exe;C:\Windows\System32\cmd.exe;</Value>
     </Setting>

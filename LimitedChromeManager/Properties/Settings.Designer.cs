@@ -25,15 +25,6 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("123123")]
-        public string token {
-            get {
-                return ((string)(this["token"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;C:\\Windows\\System32\\cmd.exe;")]
         public string AllowedProcessesPaths {
             get {
