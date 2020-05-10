@@ -13,12 +13,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace LimitedChromeManager
 {
     public partial class frmMain : Form
     {
         string[] steps =
         {
+            "STEP_TOKEN_CHALL|Proxy Token Challenge",
             "STEP_CLEAN|Close all existing process in limited user",
             "STEP_HTTP|Start HTTP token server", //Long - 1 Request-
             "STEP_CHROME|Run limited browser",
@@ -191,6 +195,40 @@ namespace LimitedChromeManager
             }
         }
 
+        private string RequestSync(string url, 
+            string body = "", string method="GET", string accept="",  WebProxy proxy = null)
+        {
+            string result = "";
+            try
+            {
+                var httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
+                if (accept != "")
+                    httpWebRequest.Accept = accept;
+                httpWebRequest.Method = method;
+                if (proxy != null)
+                    httpWebRequest.Proxy = proxy;
+
+                if (httpWebRequest.Method.ToLower() == "post")
+                {
+                    using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                    {
+                        streamWriter.Write(body);
+                    }
+                }
+
+                var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                {
+                    result = streamReader.ReadToEnd();
+                }
+            }
+            catch (Exception ex)
+            {
+                log(ex.ToString());
+            }
+            return result;
+        }
+
         private void bwProcess_DoWork(object sender, DoWorkEventArgs e)
         {
             /* Example for running multiple tasks:
@@ -205,21 +243,36 @@ namespace LimitedChromeManager
 
             // Steps:
             // =====================================
-            ProcessWatcher pw = new ProcessWatcher(Properties.Settings.Default.LimitedUserName);
+            int step = 100 / 6;
+
+            // 0. Token Challenge
+            TokenChallenge();
+            checkItem("STEP_TOKEN_CHALL");
+            setProgress(step * 1);
+
 
             // 1. Close all apps in LimitedChrome
-            checkItem("STEP_CLEAN");
-            log("Closing apps in limited user...");
-            int closedProcesses = pw.KillAllUserProcesses(()=>Flags.USER_CANCEL);
-            log("Closed " + closedProcesses + " apps in limited user");
-            setProgress(20);
+            if (Properties.Settings.Default.shouldKillProcessAtStart)
+            {
+                ProcessWatcher pw =
+                    new ProcessWatcher(Properties.Settings.Default.LimitedUserName);
+                checkItem("STEP_CLEAN");
+                log("Closing apps in limited user...");
+                int closedProcesses = pw.KillAllUserProcesses(() => Flags.USER_CANCEL);
+                log("Closed " + closedProcesses + " apps in limited user");
+            }
+            else
+            {
+                log("Skipping closing apps due to config");
+            }
+            setProgress(step * 2);
 
             // 3. Start HTTP Token server (Has accept timout)
             log("Starting HTTP Token server...");
             checkItem("STEP_HTTP");
             ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask = null;
             startHTTPThread(out httpTask, Properties.Settings.Default.RequestTimeoutSec);
-            setProgress(40);
+            setProgress(step * 3);
 
             // 4. Run chrome limited
             Process p = Process.Start(
@@ -227,17 +280,86 @@ namespace LimitedChromeManager
                     Properties.Settings.Default.ProcessToRunArgs
                 );
             checkItem("STEP_CHROME");
-            setProgress(60);
+            setProgress(step * 4);
 
             // 5. Wait for HTTP thread to join
             setProgress(-1);
             joinHTTPThread(httpTask, killOnTokenError: true);
-            setProgress(80);
+            setProgress(step * 5);
 
             log("All Done threads!");
             setProgress(100);
         }
 
-       
+        private void TokenChallenge()
+        {
+            string[] req_proxy = Properties.Settings.Default.proxyString.Split(':');
+            WebProxy myProxy = null; // For development porpuses
+            if (req_proxy.Length == 2 && int.TryParse(req_proxy[1], out _))
+            {
+                myProxy = new WebProxy(req_proxy[0], int.Parse(req_proxy[1]));
+            }
+
+            string proxy_host = Properties.Settings.Default.proxyLocalHost;
+            log("Getting mitm proxy ep...");
+            JsonElement endpoints = JsonSerializer.Deserialize<JsonElement>(
+                    RequestSync("http://" + proxy_host + "/", accept: "application/json", proxy: myProxy)
+            );
+            string start_token_ep = endpoints
+                .GetProperty("START_TOKEN_TEST")
+                .GetProperty("ep").GetString();
+            string verify_token_ep = endpoints
+                .GetProperty("VERIFY_TOKEN_TEST")
+                .GetProperty("ep").GetString();
+
+            string mySalt = "ChromeManger_" + (new Random()).Next().ToString();
+            var token_start_args = new { user_key = mySalt };
+
+            log("Starting token challenge.");
+            JsonElement start_info = JsonSerializer.Deserialize<JsonElement>(
+                    RequestSync("http://" + proxy_host + start_token_ep, proxy: myProxy,
+                        method: "POST", body: JsonSerializer.Serialize(token_start_args))
+            );
+
+            string hashed_file_path = start_info.GetProperty("path").GetString();
+            string challenge_not_hashed = start_info.GetProperty("challenge").GetString();
+
+            if (!File.Exists(hashed_file_path))
+            {
+                log("Got invalid file path: '" + hashed_file_path + "'");
+            }
+            else 
+            { 
+                log("Got token solution path");
+
+                string challenge_solution = File.ReadAllText(hashed_file_path);
+
+                var token_verify_args = new
+                {
+                    user_key = mySalt,
+                    challenge = challenge_not_hashed,
+                    proof = challenge_solution
+                };
+
+                JsonElement verify_info = JsonSerializer.Deserialize<JsonElement>(
+                        RequestSync("http://" + proxy_host + verify_token_ep, proxy: myProxy,
+                            method: "POST", body: JsonSerializer.Serialize(token_verify_args))
+                );
+
+                bool verify_hasError = verify_info.GetProperty("error").GetBoolean();
+                string verify_errorText = verify_info.GetProperty("errortext").GetString();
+                string token = verify_info.GetProperty("token").GetString();
+
+                if (verify_hasError)
+                {
+                    log("Token error: " + verify_errorText);
+                }
+                else
+                {
+                    log("Got Token! Length " + token.Length);
+                }
+            }
+        }
+
     }
 }

@@ -21,7 +21,19 @@
       <Value Profile="(Default)">C:\ProxyServices\ProxyFilteredChrome\RunAsUserInteractive.exe</Value>
     </Setting>
     <Setting Name="ProcessToRunArgs" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">C:\ProxyServices\ProxyFilteredChrome\PsExec.exe -- -accepteula -d -i {i} -u ChromeLimited -p 6666 -w C:\Windows\System32\ C:\Windows\System32\cmd.exe </Value>
+      <Value Profile="(Default)">cmd /c echo</Value>
+    </Setting>
+    <Setting Name="regKeyServerAddress" Type="System.String" Scope="Application">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="shouldKillProcessAtStart" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="proxyLocalHost" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">selfcac.local</Value>
+    </Setting>
+    <Setting Name="proxyString" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">127.0.0.1:8080</Value>
     </Setting>
   </Settings>
 </SettingsFile>

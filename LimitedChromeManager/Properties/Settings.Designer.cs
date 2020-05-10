@@ -79,11 +79,46 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\ProxyServices\\ProxyFilteredChrome\\PsExec.exe -- -accepteula -d -i {i} -u Chrom" +
-            "eLimited -p 6666 -w C:\\Windows\\System32\\ C:\\Windows\\System32\\cmd.exe ")]
+        [global::System.Configuration.DefaultSettingValueAttribute("cmd /c echo")]
         public string ProcessToRunArgs {
             get {
                 return ((string)(this["ProcessToRunArgs"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string regKeyServerAddress {
+            get {
+                return ((string)(this["regKeyServerAddress"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool shouldKillProcessAtStart {
+            get {
+                return ((bool)(this["shouldKillProcessAtStart"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("selfcac.local")]
+        public string proxyLocalHost {
+            get {
+                return ((string)(this["proxyLocalHost"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("127.0.0.1:8080")]
+        public string proxyString {
+            get {
+                return ((string)(this["proxyString"]));
             }
         }
     }
