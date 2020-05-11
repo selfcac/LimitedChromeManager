@@ -53,7 +53,7 @@ namespace LimitedChromeManager
         public void checkItem(string stepCode)
         {
             int index = -1;
-            index = Array.FindIndex(steps,(step) => step.StartsWith(stepCode));
+            index = Array.FindIndex(steps, (step) => step.StartsWith(stepCode + "|"));
             if (index > -1)
             {
                 InvokeF(clstProcess, () => { clstProcess.SetItemCheckState(index, CheckState.Checked); });
@@ -78,7 +78,7 @@ namespace LimitedChromeManager
                  });
             }
         }
-       
+
         public void log(object data)
         {
             string message = string.Format("[{0}] {1}\n", DateTime.Now.ToLongTimeString(), data?.ToString() ?? "<Empty>");
@@ -94,7 +94,7 @@ namespace LimitedChromeManager
         private void frmMain_Load(object sender, EventArgs e)
         {
             log("Started");
-            clstProcess.Items.AddRange(steps.Select((step)=>step.Substring(step.IndexOf('|')+1)).ToArray());
+            clstProcess.Items.AddRange(steps.Select((step) => step.Substring(step.IndexOf('|') + 1)).ToArray());
             bwProcess.RunWorkerAsync();
         }
 
@@ -119,7 +119,7 @@ namespace LimitedChromeManager
             else
             {
                 object result = e.Result;
-                log("Process Ended. Cancelled? " + e.Cancelled);
+                log("Limited Chrome Flow Ended. Cancelled? " + e.Cancelled);
                 checkItem("STEP_DONE");
             }
             btnExit.Visible = true;
@@ -147,13 +147,14 @@ namespace LimitedChromeManager
 
 
         public void startHTTPThread(out ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask,
-            string token, int acceptTimeoutSec)
+            string TokenData, int acceptTimeoutSec, string contentType = "text/plain")
         {
             OneTimeHTTPRequest server = new OneTimeHTTPRequest()
             {
                 findInRequest = Properties.Settings.Default.RequestMustContainArray.Split(';'),
                 AcceptTimeout = TimeSpan.FromSeconds(acceptTimeoutSec),
-                DataToServe = Encoding.ASCII.GetBytes(token)
+                DataToServe = Encoding.ASCII.GetBytes(TokenData),
+                DataContentType = contentType
             };
 
             httpTask = new ThreadTask<OneTimeHTTPRequest.HTTPTaskResult>(
@@ -162,7 +163,7 @@ namespace LimitedChromeManager
             httpTask.Start();
         }
 
-        public void joinHTTPThread(ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask, bool killOnTokenError) { 
+        public void joinHTTPThread(ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask, bool killOnTokenError) {
 
             if (httpTask.Join())
             {
@@ -185,7 +186,11 @@ namespace LimitedChromeManager
                         {
                             log("closing all processes in user because token error");
                             new ProcessWatcher(LimitedChromeManager.Properties.Settings.Default.AllowedClientUsernames)
-                                .KillAllUserProcesses(()=>false);
+                                .KillAllUserProcesses(() => false);
+                        }
+                        else
+                        {
+                            log("Skipping closing apps due to config");
                         }
                         break;
                 }
@@ -197,8 +202,8 @@ namespace LimitedChromeManager
             }
         }
 
-        private string RequestSync(string url, 
-            string body = "", string method="GET", string accept="",  WebProxy proxy = null)
+        private string RequestSync(string url,
+            string body = "", string method = "GET", string accept = "", WebProxy proxy = null)
         {
             string result = "";
             try
@@ -210,6 +215,7 @@ namespace LimitedChromeManager
                 if (proxy != null)
                     httpWebRequest.Proxy = proxy;
 
+                httpWebRequest.Timeout = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
                 if (httpWebRequest.Method.ToLower() == "post")
                 {
                     using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
@@ -248,52 +254,69 @@ namespace LimitedChromeManager
             int step = 100 / 6;
 
             // 0. Token Challenge
-            string token = TokenChallenge();
-            checkItem("STEP_TOKEN_CHALL");
-            setProgress(step * 1);
-
-
-            // 1. Close all apps in LimitedChrome
-            if (Properties.Settings.Default.ShouldKillProcessAtStart)
+            TokenResult token = TokenChallenge();
+            if (string.IsNullOrEmpty(token.token))
             {
-                ProcessWatcher pw =
-                    new ProcessWatcher(Properties.Settings.Default.AllowedClientUsernames);
-                checkItem("STEP_CLEAN");
-                log("Closing apps in limited user...");
-                int closedProcesses = pw.KillAllUserProcesses(() => Flags.USER_CANCEL);
-                log("Closed " + closedProcesses + " apps in limited user");
+                log("Got empty token!");
+                checkItem("STEP_TOKEN_ERROR");
             }
             else
             {
-                log("Skipping closing apps due to config");
+                checkItem("STEP_TOKEN_CHALL");
+                setProgress(step * 1);
+
+
+                // 1. Close all apps in LimitedChrome
+                if (Properties.Settings.Default.ShouldKillProcessAtStart)
+                {
+                    ProcessWatcher pw =
+                        new ProcessWatcher(Properties.Settings.Default.AllowedClientUsernames);
+                    checkItem("STEP_CLEAN");
+                    log("Closing apps in limited user...");
+                    int closedProcesses = pw.KillAllUserProcesses(() => Flags.USER_CANCEL);
+                    log("Closed " + closedProcesses + " apps in limited user");
+                }
+                else
+                {
+                    log("Skipping closing apps due to config");
+                }
+                setProgress(step * 2);
+
+                // 3. Start HTTP Token server (Has accept timout)
+                log("Starting HTTP Token server...");
+                checkItem("STEP_HTTP");
+                string token_stringify = JsonSerializer.Serialize(token);
+                ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask = null;
+                startHTTPThread(out httpTask, token_stringify,
+                    Properties.Settings.Default.RequestTimeoutSec, contentType: "application/json");
+                setProgress(step * 3);
+
+                // 4. Run chrome limited
+                Process p = Process.Start(
+                        Properties.Settings.Default.ProcessToRun,
+                        Properties.Settings.Default.ProcessToRunArgs
+                    );
+                checkItem("STEP_CHROME");
+                setProgress(step * 4);
+
+                // 5. Wait for HTTP thread to join
+                setProgress(-1);
+                joinHTTPThread(httpTask, killOnTokenError: Properties.Settings.Default.ShouldKillProcessAtStart);
+                setProgress(step * 5);
+
+                log("All Done threads!");
+                setProgress(100);
             }
-            setProgress(step * 2);
-
-            // 3. Start HTTP Token server (Has accept timout)
-            log("Starting HTTP Token server...");
-            checkItem("STEP_HTTP");
-            ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask = null;
-            startHTTPThread(out httpTask,token, Properties.Settings.Default.RequestTimeoutSec);
-            setProgress(step * 3);
-
-            // 4. Run chrome limited
-            Process p = Process.Start(
-                    Properties.Settings.Default.ProcessToRun,
-                    Properties.Settings.Default.ProcessToRunArgs
-                );
-            checkItem("STEP_CHROME");
-            setProgress(step * 4);
-
-            // 5. Wait for HTTP thread to join
-            setProgress(-1);
-            joinHTTPThread(httpTask, killOnTokenError: Properties.Settings.Default.ShouldKillProcessAtStart);
-            setProgress(step * 5);
-
-            log("All Done threads!");
-            setProgress(100);
         }
 
-        private string TokenChallenge()
+        public class TokenResult
+        {
+            public string token { get; set; }
+            public string salt { get; set; }
+            public string token_salted  { get; set;}
+        }
+
+        private TokenResult TokenChallenge()
         {
             string[] req_proxy = Properties.Settings.Default.DebugProxyString.Split(':');
             WebProxy myProxy = null; // For development porpuses
@@ -357,7 +380,9 @@ namespace LimitedChromeManager
                 {
                     error = verify_info.GetProperty("error").GetBoolean(),
                     errortext = verify_info.GetProperty("errortext").GetString(),
-                    token = verify_info.GetProperty("token").GetString()
+                    token = verify_info.GetProperty("token").GetString(),
+                    salt = verify_info.GetProperty("salt").GetString(),
+                    token_salted = verify_info.GetProperty("token_salted").GetString()
                 };
 
                 if (verifyResults.error)
@@ -367,11 +392,16 @@ namespace LimitedChromeManager
                 else
                 {
                     log("Got Token! Length " + verifyResults.token.Length);
-                    return verifyResults.token;
-                }
+                    return new TokenResult()
+                        {
+                            token = verifyResults.token,
+                            salt = verifyResults.salt,
+                            token_salted = verifyResults.token_salted
+                        };
+                    }
             }
 
-            return "";
+            return new TokenResult();
         }
 
     }
