@@ -2,34 +2,34 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="LimitedChromeManager.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="AllowedProcessesPaths" Type="System.String" Scope="Application">
+    <Setting Name="AllowedClientPaths" Type="System.String" Scope="Application">
       <Value Profile="(Default)">C:\Windows\System32\curl.exe;C:\Windows\System32\cmd.exe;</Value>
     </Setting>
-    <Setting Name="LimitedUserName" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">ChromeLimited</Value>
+    <Setting Name="AllowedClientUsernames" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">ChromeLimited;AdminLongPassword</Value>
     </Setting>
-    <Setting Name="RequestFindings" Type="System.String" Scope="Application">
+    <Setting Name="RequestMustContainArray" Type="System.String" Scope="Application">
       <Value Profile="(Default)">/get/token;Agent: selfc-ext</Value>
     </Setting>
     <Setting Name="RequestTimeoutSec" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">120</Value>
     </Setting>
     <Setting Name="ProcessToRun" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">C:\ProxyServices\ProxyFilteredChrome\RunAsUserInteractive.exe</Value>
+      <Value Profile="(Default)">cmd</Value>
     </Setting>
     <Setting Name="ProcessToRunArgs" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">cmd /c echo</Value>
+      <Value Profile="(Default)">/c echo</Value>
     </Setting>
-    <Setting Name="regKeyServerAddress" Type="System.String" Scope="Application">
+    <Setting Name="ChromeExtensionRegKey" Type="System.String" Scope="Application">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="shouldKillProcessAtStart" Type="System.Boolean" Scope="Application">
+    <Setting Name="ShouldKillProcessAtStart" Type="System.Boolean" Scope="Application">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="proxyLocalHost" Type="System.String" Scope="Application">
+    <Setting Name="ProxyAPIHost" Type="System.String" Scope="Application">
       <Value Profile="(Default)">selfcac.local</Value>
     </Setting>
-    <Setting Name="proxyString" Type="System.String" Scope="Application">
+    <Setting Name="DebugProxyString" Type="System.String" Scope="Application">
       <Value Profile="(Default)">127.0.0.1:8080</Value>
     </Setting>
   </Settings>

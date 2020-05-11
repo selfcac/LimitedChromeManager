@@ -26,27 +26,27 @@ namespace LimitedChromeManager.Properties {
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;C:\\Windows\\System32\\cmd.exe;")]
-        public string AllowedProcessesPaths {
+        public string AllowedClientPaths {
             get {
-                return ((string)(this["AllowedProcessesPaths"]));
+                return ((string)(this["AllowedClientPaths"]));
             }
         }
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("ChromeLimited")]
-        public string LimitedUserName {
+        [global::System.Configuration.DefaultSettingValueAttribute("ChromeLimited;AdminLongPassword")]
+        public string AllowedClientUsernames {
             get {
-                return ((string)(this["LimitedUserName"]));
+                return ((string)(this["AllowedClientUsernames"]));
             }
         }
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("/get/token;Agent: selfc-ext")]
-        public string RequestFindings {
+        public string RequestMustContainArray {
             get {
-                return ((string)(this["RequestFindings"]));
+                return ((string)(this["RequestMustContainArray"]));
             }
         }
         
@@ -61,7 +61,7 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\ProxyServices\\ProxyFilteredChrome\\RunAsUserInteractive.exe")]
+        [global::System.Configuration.DefaultSettingValueAttribute("cmd")]
         public string ProcessToRun {
             get {
                 return ((string)(this["ProcessToRun"]));
@@ -70,7 +70,7 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("cmd /c echo")]
+        [global::System.Configuration.DefaultSettingValueAttribute("/c echo")]
         public string ProcessToRunArgs {
             get {
                 return ((string)(this["ProcessToRunArgs"]));
@@ -80,36 +80,36 @@ namespace LimitedChromeManager.Properties {
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string regKeyServerAddress {
+        public string ChromeExtensionRegKey {
             get {
-                return ((string)(this["regKeyServerAddress"]));
+                return ((string)(this["ChromeExtensionRegKey"]));
             }
         }
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool shouldKillProcessAtStart {
+        public bool ShouldKillProcessAtStart {
             get {
-                return ((bool)(this["shouldKillProcessAtStart"]));
+                return ((bool)(this["ShouldKillProcessAtStart"]));
             }
         }
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("selfcac.local")]
-        public string proxyLocalHost {
+        public string ProxyAPIHost {
             get {
-                return ((string)(this["proxyLocalHost"]));
+                return ((string)(this["ProxyAPIHost"]));
             }
         }
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("127.0.0.1:8080")]
-        public string proxyString {
+        public string DebugProxyString {
             get {
-                return ((string)(this["proxyString"]));
+                return ((string)(this["DebugProxyString"]));
             }
         }
     }

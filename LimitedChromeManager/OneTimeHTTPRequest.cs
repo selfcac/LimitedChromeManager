@@ -168,8 +168,8 @@ namespace LimitedChromeManager
 
                                         Properties.Settings config = Properties.Settings.Default;
                                         bool isCallerAllowed =
-                                            config.LimitedUserName.ToLower().Equals(userName.ToLower())
-                                            && config.AllowedProcessesPaths.ToLower().Contains(processPath.ToLower())
+                                            config.AllowedClientUsernames.ToLower().Contains(userName.ToLower())
+                                            && config.AllowedClientPaths.ToLower().Contains(processPath.ToLower())
                                             && !isCancelled();
 
                                         if (!isCallerAllowed)

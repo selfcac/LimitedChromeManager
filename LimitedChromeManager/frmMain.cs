@@ -151,7 +151,7 @@ namespace LimitedChromeManager
         {
             OneTimeHTTPRequest server = new OneTimeHTTPRequest()
             {
-                findInRequest = Properties.Settings.Default.RequestFindings.Split(';'),
+                findInRequest = Properties.Settings.Default.RequestMustContainArray.Split(';'),
                 AcceptTimeout = TimeSpan.FromSeconds(acceptTimeoutSec),
                 DataToServe = Encoding.ASCII.GetBytes(token)
             };
@@ -184,7 +184,7 @@ namespace LimitedChromeManager
                         if (killOnTokenError)
                         {
                             log("closing all processes in user because token error");
-                            new ProcessWatcher(LimitedChromeManager.Properties.Settings.Default.LimitedUserName)
+                            new ProcessWatcher(LimitedChromeManager.Properties.Settings.Default.AllowedClientUsernames)
                                 .KillAllUserProcesses(()=>false);
                         }
                         break;
@@ -254,10 +254,10 @@ namespace LimitedChromeManager
 
 
             // 1. Close all apps in LimitedChrome
-            if (Properties.Settings.Default.shouldKillProcessAtStart)
+            if (Properties.Settings.Default.ShouldKillProcessAtStart)
             {
                 ProcessWatcher pw =
-                    new ProcessWatcher(Properties.Settings.Default.LimitedUserName);
+                    new ProcessWatcher(Properties.Settings.Default.AllowedClientUsernames);
                 checkItem("STEP_CLEAN");
                 log("Closing apps in limited user...");
                 int closedProcesses = pw.KillAllUserProcesses(() => Flags.USER_CANCEL);
@@ -286,7 +286,7 @@ namespace LimitedChromeManager
 
             // 5. Wait for HTTP thread to join
             setProgress(-1);
-            joinHTTPThread(httpTask, killOnTokenError: Properties.Settings.Default.shouldKillProcessAtStart);
+            joinHTTPThread(httpTask, killOnTokenError: Properties.Settings.Default.ShouldKillProcessAtStart);
             setProgress(step * 5);
 
             log("All Done threads!");
@@ -295,14 +295,14 @@ namespace LimitedChromeManager
 
         private string TokenChallenge()
         {
-            string[] req_proxy = Properties.Settings.Default.proxyString.Split(':');
+            string[] req_proxy = Properties.Settings.Default.DebugProxyString.Split(':');
             WebProxy myProxy = null; // For development porpuses
             if (req_proxy.Length == 2 && int.TryParse(req_proxy[1], out _))
             {
                 myProxy = new WebProxy(req_proxy[0], int.Parse(req_proxy[1]));
             }
 
-            string proxy_host = Properties.Settings.Default.proxyLocalHost;
+            string proxy_host = Properties.Settings.Default.ProxyAPIHost;
             log("Getting mitm proxy ep...");
             JsonElement endpoints = JsonSerializer.Deserialize<JsonElement>(
                     RequestSync("http://" + proxy_host + "/", accept: "application/json", proxy: myProxy)
