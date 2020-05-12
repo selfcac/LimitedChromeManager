@@ -69,7 +69,9 @@ namespace LimitedChromeManager
         public string DataContentType = "text/plain";
 
         public int BufferSize = 1024 * 500; // 500KB default
-        
+
+        int _actual_port = -1;
+        public int Port { get { return _actual_port; } }
 
         //  Class Functions:
         // =================================================
@@ -82,6 +84,8 @@ namespace LimitedChromeManager
 
             TcpListener tcpServer = new TcpListener(ip, port);
             tcpServer.Start();
+
+            _actual_port = ((IPEndPoint)tcpServer.LocalEndpoint).Port;
 
             // Timeout for accepting client -> Just check if pending (https://stackoverflow.com/a/3315200)
             int acceptTimePassedMS = 0;
@@ -222,6 +226,7 @@ namespace LimitedChromeManager
                     tcpServer.Stop();
                 }
             }
+
             return result;
         }
 

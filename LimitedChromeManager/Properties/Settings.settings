@@ -21,7 +21,7 @@
       <Value Profile="(Default)">/c echo</Value>
     </Setting>
     <Setting Name="ChromeExtensionRegKey" Type="System.String" Scope="Application">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">Software\Policies\Google\Chrome\3rdparty\extensions\ncpcchcnpfdmcpmafpmfldaeonjgnaam\policy</Value>
     </Setting>
     <Setting Name="ShouldKillProcessAtStart" Type="System.Boolean" Scope="Application">
       <Value Profile="(Default)">False</Value>

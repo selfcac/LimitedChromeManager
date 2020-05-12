@@ -79,7 +79,8 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Software\\Policies\\Google\\Chrome\\3rdparty\\extensions\\ncpcchcnpfdmcpmafpmfldaeonjgn" +
+            "aam\\policy")]
         public string ChromeExtensionRegKey {
             get {
                 return ((string)(this["ChromeExtensionRegKey"]));

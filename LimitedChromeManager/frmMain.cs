@@ -15,6 +15,7 @@ using System.Windows.Forms;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Win32;
 
 namespace LimitedChromeManager
 {
@@ -25,6 +26,7 @@ namespace LimitedChromeManager
             "STEP_TOKEN_CHALL|Proxy Token Challenge",
             "STEP_CLEAN|Close all existing process in limited user",
             "STEP_HTTP|Start HTTP token server", //Long - 1 Request-
+            "STEP_REG|Update configuration in registry",
             "STEP_CHROME|Run limited browser",
             "STEP_TOKEN|Browser ext requested token",
             "STEP_DONE|Done!",
@@ -146,7 +148,7 @@ namespace LimitedChromeManager
         }
 
 
-        public void startHTTPThread(out ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask,
+        public Func<int> startHTTPThread(out ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask,
             string TokenData, int acceptTimeoutSec, string contentType = "text/plain")
         {
             OneTimeHTTPRequest server = new OneTimeHTTPRequest()
@@ -158,9 +160,10 @@ namespace LimitedChromeManager
             };
 
             httpTask = new ThreadTask<OneTimeHTTPRequest.HTTPTaskResult>(
-                () => { return server.StartListener(IPAddress.Loopback, 6667, () => Flags.USER_CANCEL); }
+                () => { return server.StartListener(IPAddress.Loopback, 0, () => Flags.USER_CANCEL); }
             );
             httpTask.Start();
+            return ()=> server.Port;
         }
 
         public void joinHTTPThread(ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask, bool killOnTokenError) {
@@ -251,7 +254,7 @@ namespace LimitedChromeManager
 
             // Steps:
             // =====================================
-            int step = 100 / 6;
+            int step = 100 / 7;
 
             // 0. Token Challenge
             TokenResult token = TokenChallenge();
@@ -286,27 +289,74 @@ namespace LimitedChromeManager
                 log("Starting HTTP Token server...");
                 checkItem("STEP_HTTP");
                 string token_stringify = JsonSerializer.Serialize(token);
+
                 ThreadTask<OneTimeHTTPRequest.HTTPTaskResult> httpTask = null;
-                startHTTPThread(out httpTask, token_stringify,
+                Func<int> start_port = startHTTPThread(out httpTask, token_stringify,
                     Properties.Settings.Default.RequestTimeoutSec, contentType: "application/json");
+
+                // Let port populate by unjoind thread
+                int get_port_retries = 10;
+                int actual_port = start_port();
+                while (actual_port < 0 && get_port_retries > 0)
+                {
+                    Thread.Sleep((int)TimeSpan.FromSeconds(1).TotalMilliseconds);
+
+                    get_port_retries--;
+                    actual_port = start_port();
+                }
+                if (actual_port < 0)
+                    throw new Exception("Can't get server port");
+
+                log("Server started in address http://localhost:" + actual_port + "/");
                 setProgress(step * 3);
+
+                log("Updating registry for browser extension...");
+                UpdateRegistery(actual_port);
+                checkItem("STEP_REG");
+                setProgress(step * 4);
 
                 // 4. Run chrome limited
                 Process p = Process.Start(
                         Properties.Settings.Default.ProcessToRun,
                         Properties.Settings.Default.ProcessToRunArgs
                     );
+                log("Open process with Id: " + p.Id + ", Exited? " + p.HasExited);
                 checkItem("STEP_CHROME");
-                setProgress(step * 4);
+                setProgress(step * 5);
 
                 // 5. Wait for HTTP thread to join
                 setProgress(-1);
                 joinHTTPThread(httpTask, killOnTokenError: Properties.Settings.Default.ShouldKillProcessAtStart);
-                setProgress(step * 5);
+                setProgress(step * 6);
 
                 log("All Done threads!");
                 setProgress(100);
             }
+        }
+
+        private static void UpdateRegistery(int actual_port)
+        {
+            string reg_key = Properties.Settings.Default.ChromeExtensionRegKey;
+
+            string proxy_local = Properties.Settings.Default.ProxyAPIHost;
+            string manager_host = "localhost:" + actual_port.ToString();
+
+            // Chrome also read from Local machine (user registery is problematic:
+            //                                          only after user logon? need user process?)
+            RegistryKey myKey = Registry.LocalMachine.OpenSubKey(reg_key, true);
+            if (myKey != null)
+            {
+                myKey.SetValue("proxy_local", proxy_local, RegistryValueKind.String);
+                myKey.SetValue("manager_host", manager_host, RegistryValueKind.String);
+                myKey.Close();
+            }
+            else
+            {
+                throw new Exception("Can't find key: '" + reg_key + "'");
+            }
+
+            // Force update to reflect changes? https://stackoverflow.com/a/48798252/1997873
+            Process.Start("gpupdate", "/force").WaitForExit((int)TimeSpan.FromSeconds(20).TotalMilliseconds);
         }
 
         public class TokenResult

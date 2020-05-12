@@ -14,6 +14,8 @@ namespace LimitedChromeManager
         public string description;
         public Exception Error;
 
+        public Dictionary<string, object> ExtraInfo;
+
         public static ResultObject<TObj, TEnum> Fail(TEnum statusCode, string desc, TObj resultObj = default, Exception error = null)
         {
             ResultObject<TObj, TEnum> result = new ResultObject<TObj, TEnum>()
