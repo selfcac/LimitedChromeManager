@@ -53,6 +53,18 @@ namespace LimitedChromeManager
             }
         }
 
+        public T InvokeF<T>(Control control, Func<T> method, object[] methodParams = null)
+        {
+            if (control.InvokeRequired)
+            {
+                return (T)control.Invoke(method);
+            }
+            else
+            {
+               return (T)method.Invoke();
+            }
+        }
+
         public void checkItem(string stepCode)
         {
             int index = -1;
@@ -61,6 +73,20 @@ namespace LimitedChromeManager
             {
                 InvokeF(clstProcess, () => { clstProcess.SetItemCheckState(index, CheckState.Checked); });
             }
+        }
+
+        public bool isCheckedItem(string stepCode)
+        {
+            bool result = false;
+
+            int index = -1;
+            index = Array.FindIndex(steps, (step) => step.StartsWith(stepCode + "|"));
+            if (index > -1)
+            {
+                result = InvokeF<bool>(clstProcess, () => { return clstProcess.GetItemChecked(index); });
+            }
+
+            return result;
         }
 
         public void setProgress(int percentage)
@@ -124,6 +150,15 @@ namespace LimitedChromeManager
                 object result = e.Result;
                 log("Limited Chrome Flow Ended. Cancelled? " + e.Cancelled);
                 checkItem("STEP_DONE");
+
+                if (Properties.Settings.Default.ExitOnEnd)
+                {
+                    if (!isCheckedItem("STEP_ERROR") && !isCheckedItem("STEP_TOKEN_ERROR"))
+                    {
+                        // Done and all was okay so exit:
+                        Application.Exit();
+                    }
+                }
             }
             btnExit.Visible = true;
         }

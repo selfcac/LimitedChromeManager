@@ -26,7 +26,8 @@ namespace LimitedChromeManager.Properties {
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;C:\\Windows\\System32\\cmd.exe;C:\\Program Files (x86)\\G" +
-            "oogle\\Chrome\\Application\\chrome.exe")]
+            "oogle\\Chrome\\Application\\chrome.exe;C:\\Users\\Yoni\\Desktop\\selfc\\selfc-ext\\node_m" +
+            "odules\\chromium\\lib\\chromium\\chrome-win\\chrome.exe\r\n")]
         public string AllowedClientPaths {
             get {
                 return ((string)(this["AllowedClientPaths"]));
@@ -44,7 +45,7 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Agent: selfc-ext")]
+        [global::System.Configuration.DefaultSettingValueAttribute("get /;x-helper: anti-user")]
         public string RequestMustContainArray {
             get {
                 return ((string)(this["RequestMustContainArray"]));
@@ -93,6 +94,15 @@ namespace LimitedChromeManager.Properties {
         public string DebugProxyString {
             get {
                 return ((string)(this["DebugProxyString"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool CloseOnSucess {
+            get {
+                return ((bool)(this["CloseOnSucess"]));
             }
         }
     }
