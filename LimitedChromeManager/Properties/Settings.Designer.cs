@@ -43,7 +43,7 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("/get/token;Agent: selfc-ext")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Agent: selfc-ext")]
         public string RequestMustContainArray {
             get {
                 return ((string)(this["RequestMustContainArray"]));
@@ -79,29 +79,10 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Software\\Policies\\Google\\Chrome\\3rdparty\\extensions\\ncpcchcnpfdmcpmafpmfldaeonjgn" +
-            "aam\\policy")]
-        public string ChromeExtensionRegKey {
-            get {
-                return ((string)(this["ChromeExtensionRegKey"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool ShouldKillProcessAtStart {
             get {
                 return ((bool)(this["ShouldKillProcessAtStart"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("selfcac.local")]
-        public string ProxyAPIHost {
-            get {
-                return ((string)(this["ProxyAPIHost"]));
             }
         }
         

@@ -9,7 +9,7 @@
       <Value Profile="(Default)">ChromeLimited;AdminLongPassword</Value>
     </Setting>
     <Setting Name="RequestMustContainArray" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">/get/token;Agent: selfc-ext</Value>
+      <Value Profile="(Default)">Agent: selfc-ext</Value>
     </Setting>
     <Setting Name="RequestTimeoutSec" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">120</Value>
@@ -20,14 +20,8 @@
     <Setting Name="ProcessToRunArgs" Type="System.String" Scope="Application">
       <Value Profile="(Default)">/c echo</Value>
     </Setting>
-    <Setting Name="ChromeExtensionRegKey" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">Software\Policies\Google\Chrome\3rdparty\extensions\ncpcchcnpfdmcpmafpmfldaeonjgnaam\policy</Value>
-    </Setting>
     <Setting Name="ShouldKillProcessAtStart" Type="System.Boolean" Scope="Application">
       <Value Profile="(Default)">False</Value>
-    </Setting>
-    <Setting Name="ProxyAPIHost" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">selfcac.local</Value>
     </Setting>
     <Setting Name="DebugProxyString" Type="System.String" Scope="Application">
       <Value Profile="(Default)">127.0.0.1:8080</Value>

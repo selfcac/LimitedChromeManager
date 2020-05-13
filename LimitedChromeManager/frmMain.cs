@@ -16,6 +16,7 @@ using System.Windows.Forms;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Win32;
+using System.Reflection;
 
 namespace LimitedChromeManager
 {
@@ -26,7 +27,7 @@ namespace LimitedChromeManager
             "STEP_TOKEN_CHALL|Proxy Token Challenge",
             "STEP_CLEAN|Close all existing process in limited user",
             "STEP_HTTP|Start HTTP token server", //Long - 1 Request-
-            "STEP_REG|Update configuration in registry",
+            "STEP_TEMP_PORT|Send temp port to proxy",
             "STEP_CHROME|Run limited browser",
             "STEP_TOKEN|Browser ext requested token",
             "STEP_DONE|Done!",
@@ -240,6 +241,7 @@ namespace LimitedChromeManager
             return result;
         }
 
+        const string proxy_host = "public-api.web-filter.local";
         private void bwProcess_DoWork(object sender, DoWorkEventArgs e)
         {
             /* Example for running multiple tasks:
@@ -256,8 +258,19 @@ namespace LimitedChromeManager
             // =====================================
             int step = 100 / 7;
 
+            log("Getting all EP from proxy");
+            string[] req_proxy = Properties.Settings.Default.DebugProxyString.Split(':');
+            WebProxy myProxy = null; // For development porpuses
+            if (req_proxy.Length == 2 && int.TryParse(req_proxy[1], out _))
+            {
+                myProxy = new WebProxy(req_proxy[0], int.Parse(req_proxy[1]));
+            }
+            JsonElement endpoints = JsonSerializer.Deserialize<JsonElement>(
+                RequestSync("http://" + proxy_host + "/", accept: "application/json", proxy: myProxy)
+            );
+
             // 0. Token Challenge
-            TokenResult token = TokenChallenge();
+            TokenResult token = TokenChallenge(endpoints, myProxy);
             if (string.IsNullOrEmpty(token.token))
             {
                 log("Got empty token!");
@@ -310,9 +323,9 @@ namespace LimitedChromeManager
                 log("Server started in address http://localhost:" + actual_port + "/");
                 setProgress(step * 3);
 
-                log("Updating registry for browser extension...");
-                UpdateRegistery(actual_port);
-                checkItem("STEP_REG");
+                log("Sending temp token to proxy...");
+                SendTempPort(endpoints,myProxy, actual_port);
+                checkItem("STEP_TEMP_PORT");
                 setProgress(step * 4);
 
                 // 4. Run chrome limited
@@ -334,29 +347,14 @@ namespace LimitedChromeManager
             }
         }
 
-        private static void UpdateRegistery(int actual_port)
+        private void SendTempPort(JsonElement endpoints,  WebProxy myProxy, int actual_port)
         {
-            string reg_key = Properties.Settings.Default.ChromeExtensionRegKey;
+            string manager_port_ep = endpoints
+                .GetProperty("MANAGER_PORT_SET")
+                .GetProperty("ep").GetString();
 
-            string proxy_local = Properties.Settings.Default.ProxyAPIHost;
-            string manager_host = "localhost:" + actual_port.ToString();
-
-            // Chrome also read from Local machine (user registery is problematic:
-            //                                          only after user logon? need user process?)
-            RegistryKey myKey = Registry.LocalMachine.OpenSubKey(reg_key, true);
-            if (myKey != null)
-            {
-                myKey.SetValue("proxy_local", proxy_local, RegistryValueKind.String);
-                myKey.SetValue("manager_host", manager_host, RegistryValueKind.String);
-                myKey.Close();
-            }
-            else
-            {
-                throw new Exception("Can't find key: '" + reg_key + "'");
-            }
-
-            // Force update to reflect changes? https://stackoverflow.com/a/48798252/1997873
-            Process.Start("gpupdate", "/force").WaitForExit((int)TimeSpan.FromSeconds(20).TotalMilliseconds);
+            RequestSync("http://" + proxy_host + manager_port_ep, proxy: myProxy,
+                       method: "POST", body: actual_port.ToString());
         }
 
         public class TokenResult
@@ -366,20 +364,9 @@ namespace LimitedChromeManager
             public string token_salted  { get; set;}
         }
 
-        private TokenResult TokenChallenge()
-        {
-            string[] req_proxy = Properties.Settings.Default.DebugProxyString.Split(':');
-            WebProxy myProxy = null; // For development porpuses
-            if (req_proxy.Length == 2 && int.TryParse(req_proxy[1], out _))
-            {
-                myProxy = new WebProxy(req_proxy[0], int.Parse(req_proxy[1]));
-            }
-
-            string proxy_host = Properties.Settings.Default.ProxyAPIHost;
+        private TokenResult TokenChallenge(JsonElement endpoints, WebProxy myProxy)
+        {            
             log("Getting mitm proxy ep...");
-            JsonElement endpoints = JsonSerializer.Deserialize<JsonElement>(
-                    RequestSync("http://" + proxy_host + "/", accept: "application/json", proxy: myProxy)
-            );
             string start_token_ep = endpoints
                 .GetProperty("START_TOKEN_TEST")
                 .GetProperty("ep").GetString();
