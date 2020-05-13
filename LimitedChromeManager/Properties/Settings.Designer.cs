@@ -25,7 +25,8 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;C:\\Windows\\System32\\cmd.exe;")]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Windows\\System32\\curl.exe;C:\\Windows\\System32\\cmd.exe;C:\\Program Files (x86)\\G" +
+            "oogle\\Chrome\\Application\\chrome.exe")]
         public string AllowedClientPaths {
             get {
                 return ((string)(this["AllowedClientPaths"]));
@@ -34,7 +35,7 @@ namespace LimitedChromeManager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("ChromeLimited;AdminLongPassword")]
+        [global::System.Configuration.DefaultSettingValueAttribute("ChromeLimited;AdminLongPassword;Yoni")]
         public string AllowedClientUsernames {
             get {
                 return ((string)(this["AllowedClientUsernames"]));

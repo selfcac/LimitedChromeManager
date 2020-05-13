@@ -3,10 +3,10 @@
   <Profiles />
   <Settings>
     <Setting Name="AllowedClientPaths" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">C:\Windows\System32\curl.exe;C:\Windows\System32\cmd.exe;</Value>
+      <Value Profile="(Default)">C:\Windows\System32\curl.exe;C:\Windows\System32\cmd.exe;C:\Program Files (x86)\Google\Chrome\Application\chrome.exe</Value>
     </Setting>
     <Setting Name="AllowedClientUsernames" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">ChromeLimited;AdminLongPassword</Value>
+      <Value Profile="(Default)">ChromeLimited;AdminLongPassword;Yoni</Value>
     </Setting>
     <Setting Name="RequestMustContainArray" Type="System.String" Scope="Application">
       <Value Profile="(Default)">Agent: selfc-ext</Value>
