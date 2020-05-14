@@ -151,7 +151,7 @@ namespace LimitedChromeManager
                 log("Limited Chrome Flow Ended. Cancelled? " + e.Cancelled);
                 checkItem("STEP_DONE");
 
-                if (Properties.Settings.Default.ExitOnEnd)
+                if (Properties.Settings.Default.CloseOnSucess)
                 {
                     if (!isCheckedItem("STEP_ERROR") && !isCheckedItem("STEP_TOKEN_ERROR"))
                     {
